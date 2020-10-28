@@ -13,8 +13,9 @@
 /*
  * vm_map
  *
- * Ask for the lowest invalid virtual page in the process's arena to be
- * declared valid.  On success, vm_map returns the lowest address of the
+ * Ask for rthe lowest invalid virtual page in the process's arena to be
+ * declared valid.  is backed by the specified
+ * file at the specified block and is shared with o On success, vm_map returns the lowest address of the
  * new virtual page.  vm_map returns nullptr if the arena is full.
  *
  * If filename is nullptr, block is ignored, and the new virtual page is
@@ -22,8 +23,7 @@
  * (i.e., not shared with any other virtual page).  In this case, vm_map
  * returns nullptr if the swap file is out of space.
  *
- * If filename is not nullptr, the new virtual page is backed by the specified
- * file at the specified block and is shared with other virtual pages that are
+ * If filename is not nullptr, the new vitual pagether virtual pages that are
  * mapped to that file and block.  filename is a null-terminated C string and
  * must reside completely in the valid portion of the arena.  In this case,
  * vm_map returns nullptr if filename is not completely in the valid part of
