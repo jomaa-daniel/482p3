@@ -1,4 +1,9 @@
 #include "vm_pager.h"
+#include "globals.h"
+#include "util.h"
+
+
+
 
 /*
  * vm_init
@@ -9,9 +14,16 @@
  * vm_init is passed the number of physical memory pages and the number
  * of blocks in the swap file.
  */
-void vm_init(unsigned int memory_pages, unsigned int swap_blocks)
+void vm_init(unsigned int memory_pages, unsigned int swap_blocks) 
 {
-    
+    MAX_SWAP_CAPACITY = swap_blocks;
+    MAX_PHYSICAL_MEM_SIZE = memory_pages;
+    //This zero page should be allocated and 
+    //initialized with zeroes when the pager starts,
+    //and it should never be evicted
+    zero_out_ppage(0);
+
+    // for each physical page put its integer in deque
 }
 
 /*
@@ -25,6 +37,20 @@ void vm_init(unsigned int memory_pages, unsigned int swap_blocks)
  */
 int vm_create(pid_t parent_pid, pid_t child_pid)
 {
+    Arena* arena = nullptr;
+    // check to see if the parent PID exists, if it does not, zeros
+    if (pid_to_arena.find(parent_pid) == end(pid_to_arena))
+    {
+        //Create empty arena
+        // set to zeros
+        arena = new Arena();
+        pid_to_arena[child_pid] = arena;
+    }
+    // else copy the parent PID Arena struct
+    else
+    {
+        arena = new Arena(*pid_to_arena[parent_pid]);
+    }
 
 }
 
