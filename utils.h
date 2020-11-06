@@ -1,4 +1,6 @@
-#pragma once
+#ifndef _utils_H_
+#define _utils_H_
+
 #include "vm_pager.h"
 #include "vm_arena.h"
 #include "globals.h"
@@ -162,3 +164,5 @@ bool assert_vpage_occurs_once()
     //     std::unordered_set<VirtualPage
     // }
 }
+
+#endif /* _VM_PAGER_H_ */

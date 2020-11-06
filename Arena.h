@@ -1,4 +1,6 @@
-#pragma once
+#ifndef _arena_H_
+#define _arena_H_
+
 #include "vm_pager.h"
 #include <unordered_map>
 #include "Virtual_Page.h"
@@ -16,3 +18,5 @@ class Arena
     Arena(Arena& other);
     
 };
+
+#endif /* _VM_PAGER_H_ */

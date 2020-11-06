@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _globals_H_
+#define _globals_H_
 #include <deque>
 #include <unordered_map>
 #include <unordered_set>
@@ -13,7 +14,6 @@
 using namespace std;
 
 const int DEBUG = 1;
-
 
 
 struct Physical_Page 
@@ -204,6 +204,9 @@ bool assert_vpage_occurs_once()
     //     std::unordered_set<VirtualPage
     // }
 }
+
+#endif /* _VM_PAGER_H_ */
+
 
 
 

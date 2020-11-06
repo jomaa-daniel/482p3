@@ -1,4 +1,6 @@
-#pragma once
+#ifndef _vp_H_
+#define _vp_H_
+
 #include "vm_pager.h"
 
 class Arena;
@@ -19,3 +21,5 @@ class Virtual_Page
     bool in_swap; // for evictions (for the first appearance), if dirty=0 and has_blo
     bool in_clock;
 };
+
+#endif /* _VM_PAGER_H_ */
