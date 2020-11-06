@@ -1,4 +1,6 @@
+#pragma once
 #include "vm_pager.h"
+#include "vm_arena.h"
 #include "globals.h"
 #include <cassert>
 unsigned int current_available_block = 0;
