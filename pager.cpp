@@ -113,7 +113,6 @@ void *vm_map(const char *filename, unsigned int block)
     
     //Returning the previous address since we are using current for our next future vp
     return (void *) current_arena->valid_arena_bound - VM_PAGESIZE;
-
 }
 
 
@@ -131,3 +130,13 @@ int vm_fault(const void* addr, bool write_flag)
     
 }
 
+/*
+ * vm_destroy
+ *
+ * Called when current process exits.  This gives the pager a chance to
+ * clean up any resources used by the process.
+ */
+void vm_destroy()
+{
+    pid_to_arena.erase(current_running_pid);
+}

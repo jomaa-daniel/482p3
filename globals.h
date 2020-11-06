@@ -1,6 +1,7 @@
-#include <deque>
 #pragma once
+#include <deque>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "vm_pager.h"
 #include "util.h"
@@ -8,6 +9,22 @@
 #include <cassert>
 
 const int DEBUG = 1;
+
+// NOTE ONLY WRITEBACK WHEN NEVER IN SWAP I.E. virtual_to_swap returns null OR dirty
+std::deque<Physical_Page*> mem_clock;
+//Not required for correctness
+std::unordered_map<unsigned int, Physical_Page*> ppage_in_clock; 
+
+pid_t current_running_pid = 0;
+Arena* current_arena = nullptr;
+std::unordered_map<pid_t, Arena*> pid_to_arena;
+std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> swap_block_to_owners;
+std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> ppage_to_owners;
+
+
+unsigned int available_swap_blocks;
+unsigned int MAX_SWAP_CAPACITY;
+unsigned int MAX_PHYSICAL_MEM_SIZE;
 
 class Virtual_Page
 {
@@ -44,18 +61,18 @@ class Virtual_Page
             //Update ppage_to_owner map/ so this virtual page owns 0 page
             if(ppage_to_owners.find(0) == end(ppage_to_owners))
             {
-                ppage_to_owners[0] = std::vector<Virtual_Page*>();
+                ppage_to_owners[0] = std::unordered_set<Virtual_Page*>();
             }
     
-            ppage_to_owners[0].push_back(this);
+            ppage_to_owners[0].insert(this);
 
             //Iterate arena bound for next page
             current_arena->valid_arena_bound = 
             current_arena->valid_arena_bound + VM_PAGESIZE - 1;
         }
 
-        Virtual_Page(unsigned int block_, bool has_block_, unsigned int ppage_entry, bool read_enable, bool write_enable, Arena *arena)
-        : block(block_), in_swap(has_block_) 
+        Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, unsigned int ppage_entry, bool read_enable, bool write_enable, Arena *arena)
+        : block(block_), in_swap(in_swap), in_clock(in_clock_) 
         {
             //iterate valid_arena_bound ????
             
@@ -86,11 +103,11 @@ class Virtual_Page
             //Update ppage_to_owner map/ so this virtual page owns 0 page
             if(ppage_to_owners.find(ppage_entry) == end(ppage_to_owners))
             {
-                ppage_to_owners[ppage_entry] = std::vector<Virtual_Page*>();
+                ppage_to_owners[ppage_entry] = std::unordered_set<Virtual_Page*>();
             }
     
                
-            ppage_to_owners[ppage_entry].push_back(this);
+            ppage_to_owners[ppage_entry].insert(this);
 
             //Iterate arena bound for next page
             current_arena->valid_arena_bound = 
@@ -147,26 +164,57 @@ class Arena
             // set eq to pair.second.block
 
             // this needs to allocate a new page and increment the address
-            Virtual_Page * new_page = new Virtual_Page(&(page_table.ptes[pair.first]),
-                pair.second->block, pair.second->in_swap); 
-            virtual_pages[pair.first] = new_page;
+
+            Virtual_Page * new_page = new Virtual_Page
+            (
+                pair.second->block,
+                pair.second->in_swap,
+                pair.second->in_clock,
+                pair.second->entry->ppage,
+                pair.second->entry->read_enable,
+                pair.second->entry->write_enable,
+                this
+            ); 
 
             // make sure that the virtual page that we are copying actually exists in the 
             // swap file
-            assert(pair.second->in_swap and 
-            swap_block_to_owners.find(pair.first) != end(swap_block_to_owners));
             
             // assign this new page as an owner of the corresponding swap block
-            if(pair.second->in_swap){
-                swap_block_to_owners[pair.second->block].push_back(new_page);
+            if(pair.second->in_swap)
+            {
+                
+                //Iterate and check that the swap block is owned by the source virtual page
+                assert([](auto& p)->bool
+                {
+                   for(auto vp : swap_block_to_owners[pair.second->block])
+                   {
+                       if (p.second == vp) {return true;}
+                   }
+                   return false;     
+                }(pair));
+                
+                //This swap block must have 1 owner namely the source virtual page
+                swap_block_to_owners[pair.second->block].insert(new_page);
             }
 
             // assign this new page as an owner of this physical page
             // get the physical address of this virtual page by
             // pointer artithmetic 
-            if(pair.second->in_clock)
+
+            if(pair.second->in_clock || pair.second->entry->ppage == 0)
             {
-                ppage_to_owners[pair.second->entry->ppage].push_back(new_page);
+                //Doesn't work since we are making and remaking physical pages
+                // assert([&](auto& p)->bool
+                // {
+                //    for(auto* pp : mem_clock)
+                //    {
+                //        if (p.second->entry->ppage == pp->ppage_location)
+                //         {return true;}
+                //    }
+                //    return false;     
+                // }(pair));
+
+                ppage_to_owners[pair.second->entry->ppage].insert(new_page);
             }
         }
     }
@@ -182,27 +230,37 @@ class Arena
 
     ~Arena()
     {
-        for (auto& page: virtual_pages)
+        for (auto& pair: virtual_pages)
         {
-            delete page.second;
+            if(pair.second->in_swap){
+                //Check this block is owned by someone
+                assert(swap_block_to_owners.find(pair.second->block) != end(swap_block_to_owners));
+                //Check this block is owned by this virtual page
+                assert(*(swap_block_to_owners[pair.second->block].find(pair.second)) == pair.second);
+
+                if(swap_block_to_owners[pair.second->block].size() == 1){
+                    ++available_swap_blocks;
+                }
+                // remove this virtual page as an owner of this swap block
+                swap_block_to_owners[pair.second->block].erase(pair.second);
+
+            }
+            //Make sure clock isnt checking for owners
+            if(pair.second->in_clock || pair.second->entry->ppage == 0)
+            {
+                //Check if this ppage is owned by someone
+                assert(ppage_to_owners.find(pair.second->entry->ppage) != end(ppage_to_owners));
+                //Check this ppage is owned by this virtual page
+                assert(*(ppage_to_owners[pair.second->entry->ppage].find(pair.second)) == pair.second);
+                ppage_to_owners[pair.second->entry->ppage].erase(pair.second);
+            }
+            
+            delete pair.second;
         }
+
     }
 };
 
-// NOTE ONLY WRITEBACK WHEN NEVER IN SWAP I.E. virtual_to_swap returns null OR dirty
-std::deque<Physical_Page*> mem_clock;
-//Not required for correctness
-std::unordered_map<unsigned int, Physical_Page*> ppage_in_clock; 
 
-pid_t current_running_pid = 0;
-Arena* current_arena = nullptr;
-std::unordered_map<pid_t, Arena*> pid_to_arena;
-std::unordered_map<unsigned int , std::vector<Virtual_Page *>> swap_block_to_owners;
-std::unordered_map<unsigned int , std::vector<Virtual_Page *>> ppage_to_owners;
-
-
-unsigned int available_swap_blocks;
-unsigned int MAX_SWAP_CAPACITY;
-unsigned int MAX_PHYSICAL_MEM_SIZE;
 
 

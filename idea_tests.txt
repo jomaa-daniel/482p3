@@ -1,0 +1,26 @@
+1. evicting a ppage has no owners / check propogate swapspace
+2. Evict a clean page with no corresponding swap block
+3. evict a clean page with a correspodingin swap block
+4. evict a dirty page with no corresponding swap block
+5. evict a dirty page with a corresponding swap block
+6. Deallocate a swap block and fill it with another page 
+7. evcit a phyiscal page with multiple owners
+8. evict a swap block with multiple owners
+9. evict a swap block with one owner
+10. max out the swap file
+11. max out the virtual space
+12 
+13.
+14.
+15.
+16.
+17.
+18.
+
+
+. 
+
+
+
+Virtual Page States: Inclock/outclock, Inswap/Outswap, Read/Notread, Write/Notwrite, point0/notpoint0, owns shared/single/no, owns shared/single/no mem  
+Physical Page States: Dirty/Notdirty 

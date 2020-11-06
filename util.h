@@ -1,4 +1,5 @@
 #include "vm_pager.h"
+#include "globals.h"
 #include <cassert>
 unsigned int current_available_block = 0;
 
@@ -28,7 +29,7 @@ void zero_out_ppage(unsigned int ppage)
 
 unsigned int get_virtual_page_num(void* addr)
 {
-    unsigned int address = (unsigned int) addr;
+    uintptr_t address = (uintptr_t) addr;
     unsigned int mask = 0xFFFFFFFFFFFFF000;
 
     return address & mask;
@@ -46,9 +47,8 @@ unsigned int find_open_block() {
 
 
 bool check_ppage_owners_age(Physical_Page *phys_page){
-    assert(ppage_to_owners.find(phys_page->ppage_location) != ppage_to_owners.end());
 
-    bool recent = ppage_to_owners[phys_page->ppage_location].front()->entry->read_enable;
+    bool recent = (*begin(ppage_to_owners[phys_page->ppage_location]))->entry->read_enable;
     
     // if first one is old:
         // ASSERT ALL of them are old, return true
@@ -57,9 +57,9 @@ bool check_ppage_owners_age(Physical_Page *phys_page){
         // assert ALL of them are not old and change them to old at the same 
 
 
-    for( auto &vp : ppage_to_owners[phys_page->ppage_location] ){
+    for( auto vp : ppage_to_owners[phys_page->ppage_location] ){
         assert(recent != vp->entry->read_enable);
-        if(recent == true && vp->entry->read_enable == 1){
+        if(vp->entry->read_enable == 1){
             vp->entry->read_enable = 0;
         }
     }
@@ -75,8 +75,6 @@ Physical_Page find_victim()
     // make sure to keep in parallel with map
     //delete from deque and map
     Physical_Page* next_page = nullptr;
-    // possible assertion? make sure that ALL owners of phys page are nulled
-    // assert that at LEAST ONE virtual page actually owns this physical page
     bool is_recent = false;
 
     do
@@ -133,6 +131,9 @@ void add_new_page_to_clock(unsigned int ppage_location)
     ppage_in_clock[ppage_location] = new_page;
 }
 
+// TAKE NOTE THAT THERE IS A POSSIBILITY THAT THE PHYSICAL PAGE HAS NO OWNERS
+//  they might have been dealloc while still having v_pages pointing to phys pages
+// in the clock
 void evict_phys_page(Physical_Page& page)
 {
 
@@ -154,8 +155,8 @@ void evict_phys_page(Physical_Page& page)
 /////////////////// ASSERT FUNCTIONS //////////////////
 bool assert_vpage_occurs_once()
 {
-    for (auto & p : ppage_to_owners)
-    {
-        std::unordered_set<VirtualPage
-    }
+    // for (auto & p : ppage_to_owners)
+    // {
+    //     std::unordered_set<VirtualPage
+    // }
 }
