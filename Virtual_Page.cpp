@@ -1,3 +1,4 @@
+#include "Virtual_Page.h"
 #include "globals.h"
 
 Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false) 
@@ -28,7 +29,7 @@ Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false)
     current_arena->virtual_pages[vp_num];
 
     //Update ppage_to_owner map/ so this virtual page owns 0 page
-    if(ppage_to_owners.find(0) == std::end(ppage_to_owners))
+    if(ppage_to_owners.find(0) == ppage_to_owners.end())
     {
         ppage_to_owners[0] = std::unordered_set<Virtual_Page*>();
     }
@@ -40,7 +41,8 @@ Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false)
     current_arena->valid_arena_bound + VM_PAGESIZE - 1;
 }
 
-Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, unsigned int ppage_entry, bool read_enable, bool write_enable, Arena *arena)
+Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, 
+unsigned int ppage_entry, bool read_enable, bool write_enable, Arena *arena)
 : block(block_), in_swap(in_swap), in_clock(in_clock_) 
 {
     //iterate valid_arena_bound ????
@@ -60,6 +62,7 @@ Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, u
         throw NotEnoughSwapBlocks();
     }
     uintptr_t vp_num = get_virtual_page_num((void *) arena->valid_arena_bound);
+    //Check vp_num matches the copied pages vp_num ASSERT
     entry = &arena->page_table.ptes[vp_num];
     
     entry->ppage = ppage_entry;
@@ -69,17 +72,68 @@ Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, u
     //Store in arenas virtual page map
     arena->virtual_pages[vp_num];
 
-    //Update ppage_to_owner map/ so this virtual page owns 0 page
-    if(ppage_to_owners.find(ppage_entry) == ppage_to_owners.end())
-    {
-        ppage_to_owners[ppage_entry] = std::unordered_set<Virtual_Page*>();
+    //Update ppage_to_owner map/ so this virtual page owns the same ppage 
+    //assert(ppage_to_owners.find(ppage_entry) == ppage_to_owners.end())
+    if(in_clock || ppage_entry == 0){
+        //Update ownership of ppage
+        ppage_to_owners[ppage_entry].insert(this);
     }
-
+    //Update swap_to_owner map/ so this virtual page owns the same swap 
+    if(in_swap)
+    {   
+        //Iterate and check that the swap block is owned by the source virtual page
+        // assert([&]()->bool
+        // {
+        //     for(auto vp : x)
+        //     {
+        //         if (*this == vp) {return true;}
+        //     }
+        //     return false;     
+        // }());
+            
+        //This swap block must have 1 owner namely the source virtual page
+        swap_block_to_owners[block_].insert(this);
+    }
         
-    ppage_to_owners[ppage_entry].insert(this);
-
     //Iterate arena bound for next page
     current_arena->valid_arena_bound = 
         current_arena->valid_arena_bound + VM_PAGESIZE;
     
-}       
+} 
+bool Virtual_Page::operator==(const Virtual_Page &rhs){
+    return (this->block == rhs.block and this->in_swap == rhs.in_swap
+    and this->in_clock == rhs.block and this->entry->ppage == rhs.entry->ppage
+    and this->entry->read_enable == rhs.entry->read_enable
+    and this->entry->write_enable == rhs.entry->write_enable);
+
+}
+
+
+Virtual_Page::~Virtual_Page()
+{
+    if(this->in_swap){
+            //Check this block is owned by someone
+            assert(swap_block_to_owners.find(this->block) != swap_block_to_owners.end());
+            //Check this block is owned by this virtual page
+            assert(swap_block_to_owners[this->block].find(this) != 
+                swap_block_to_owners[this->block].end());   
+
+            //Give space back to swap file
+            if(swap_block_to_owners[this->block].size() == 1){
+                ++available_swap_blocks;
+            }
+
+            // remove this virtual page as an owner of this swap block
+            swap_block_to_owners[this->block].erase(this);
+        }
+        
+        
+    if(this->in_clock || this->entry->ppage == 0){
+            //Check if this ppage is owned by someone
+            assert(ppage_to_owners.find(this->entry->ppage) != ppage_to_owners.end());
+            //Check this ppage is owned by this virtual page
+            assert(*(ppage_to_owners[this->entry->ppage].find(this)) ==this);
+            //Remove this virtual page as an owner of this swap block
+            ppage_to_owners[this->entry->ppage].erase(this);
+        }
+}

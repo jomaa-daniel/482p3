@@ -1,6 +1,4 @@
-#ifndef _VM_GLOBALS_H_
-#define _VM_GLOBALS_H_
-
+#pragma once
 #include <deque>
 #include <unordered_map>
 #include <unordered_set>
@@ -38,14 +36,14 @@ extern std::deque<Physical_Page*> mem_clock;
 //Not required for correctness
 extern std::unordered_map<unsigned int, Physical_Page*> ppage_in_clock; 
 
-extern pid_t current_running_pid = 0;
-extern Arena* current_arena = nullptr;
+extern pid_t current_running_pid;
+extern Arena* current_arena;
 extern std::unordered_map<pid_t, Arena*> pid_to_arena;
 extern std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> swap_block_to_owners;
 extern std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> ppage_to_owners;
 
 extern unsigned int available_swap_blocks;
-extern unsigned int current_available_block = 0;
+extern unsigned int current_available_block;
 extern unsigned int MAX_SWAP_CAPACITY;
 extern unsigned int MAX_PHYSICAL_MEM_SIZE;
 
@@ -206,8 +204,6 @@ bool assert_vpage_occurs_once()
     //     std::unordered_set<VirtualPage
     // }
 }
-
-#endif /* _VM_PAGER_H_ */
 
 
 
