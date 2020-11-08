@@ -1,5 +1,6 @@
 #include "Virtual_Page.h"
 #include "globals.h"
+#include "utils.h"
 
 Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false) 
 {
@@ -10,7 +11,8 @@ Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false)
         throw NotEnoughVirtualMemory();
     }
     //Eager Swap reservation (Make sure virtual page has enough space in swap file)
-    if(available_swap_blocks > 0){
+    if(available_swap_blocks > 0)
+    {
         //Iterate swap space
         --available_swap_blocks;
     }
@@ -18,6 +20,8 @@ Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false)
         throw NotEnoughSwapBlocks();
     }
     uintptr_t vp_num = get_virtual_page_num((void *) current_arena->valid_arena_bound);
+        //uintptr_t vp_num =  current_arena->valid_arena_bound - VM_ARENA_BASEADDR;
+
     entry = &current_arena->page_table.ptes[vp_num];
     
     //Make sure to set entry to be appropriate for ppage 0.
@@ -26,7 +30,7 @@ Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false)
     entry->write_enable = 0;
 
     //Store in arenas virtual page map
-    current_arena->virtual_pages[vp_num];
+    current_arena->virtual_pages[vp_num] = this;
 
     //Update ppage_to_owner map/ so this virtual page owns 0 page
     if(ppage_to_owners.find(0) == ppage_to_owners.end())
@@ -38,12 +42,12 @@ Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false)
 
     //Iterate arena bound for next page
     current_arena->valid_arena_bound = 
-    current_arena->valid_arena_bound + VM_PAGESIZE - 1;
+        current_arena->valid_arena_bound + VM_PAGESIZE - 1;
 }
 
 Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, 
 unsigned int ppage_entry, bool read_enable, bool write_enable, Arena *arena)
-: block(block_), in_swap(in_swap), in_clock(in_clock_) 
+: block(block_), in_swap(in_swap_), in_clock(in_clock_) 
 {
     //iterate valid_arena_bound ????
     
@@ -118,6 +122,7 @@ Virtual_Page::~Virtual_Page()
             assert(swap_block_to_owners[this->block].find(this) != 
                 swap_block_to_owners[this->block].end());   
 
+           
             //Give space back to swap file
             if(swap_block_to_owners[this->block].size() == 1){
                 ++available_swap_blocks;
@@ -133,6 +138,16 @@ Virtual_Page::~Virtual_Page()
             assert(ppage_to_owners.find(this->entry->ppage) != ppage_to_owners.end());
             //Check this ppage is owned by this virtual page
             assert(*(ppage_to_owners[this->entry->ppage].find(this)) ==this);
+
+             //Dont evict a page just replace this one on next vm_fault
+            if(ppage_to_owners[this->entry->ppage].size() == 1){
+                for(auto pp = mem_clock.begin(); pp != mem_clock.end(); ++pp){
+                    if((*pp)->ppage_location == this->entry->ppage){
+                        mem_clock.erase(pp);
+                        break;
+                    }              
+                } 
+            }
             //Remove this virtual page as an owner of this swap block
             ppage_to_owners[this->entry->ppage].erase(this);
         }

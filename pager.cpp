@@ -1,5 +1,6 @@
 #include "vm_pager.h"
 #include "globals.h"
+#include "utils.h"
 
 
 std::deque<Physical_Page*> mem_clock;
@@ -13,7 +14,6 @@ std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> swap_block
 std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> ppage_to_owners;
 
 unsigned int available_swap_blocks;
-unsigned int current_available_block;
 unsigned int MAX_SWAP_CAPACITY;
 unsigned int MAX_PHYSICAL_MEM_SIZE;
 
@@ -65,6 +65,7 @@ int vm_create(pid_t parent_pid, pid_t child_pid)
     }
 
     pid_to_arena[child_pid] = arena;
+    return 0;
 }
 
 
@@ -110,7 +111,7 @@ void *vm_map(const char *filename, unsigned int block)
     {
         if (DEBUG)
         {
-            std::cout << e.what();
+            std::cerr << e.what();
         }
         return nullptr;
     }
@@ -118,16 +119,14 @@ void *vm_map(const char *filename, unsigned int block)
     {
         if (DEBUG)
         {
-            std::cout << e.what();
+            std::cerr << e.what();
         }
         return nullptr; 
     }
     
     //Returning the previous address since we are using current for our next future vp
-    return (void *) current_arena->valid_arena_bound - VM_PAGESIZE;
+    return (void *) (current_arena->valid_arena_bound - VM_PAGESIZE);
 }
-
-
 
 
 /*
@@ -139,6 +138,50 @@ void *vm_map(const char *filename, unsigned int block)
  */
 int vm_fault(const void* addr, bool write_flag)
 {
+    uintptr_t address = uintptr_t(addr);
+    //Check if addr is invalid (bound check?)
+    if (not_valid_addr(address))
+    {
+        return -1;
+    }
+    
+    // find the virutal page
+    unsigned int base_address = get_virtual_page_num(addr);
+
+    Virtual_Page* current_page =
+     current_arena->virtual_pages[base_address];
+    
+    //assert page_table[addr] is equal to page->entry
+    // assert the entry pointers match table and V-page
+    assert(&(current_arena->page_table.ptes[base_address])
+     == current_page->entry);
+    // can a page ever be not in swap nor mem?
+    try
+    {
+        if (current_page->in_clock)
+        {
+            handle_fault_clock(write_flag, current_page);
+        }
+        // only in swap file/Or the 0 page, needs to be brought to phys mem
+        else
+        {
+            handle_fault_swap(write_flag, current_page);
+        }
+
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }   
+    
+}
+/*
+ * vm_switch
+ *
+ * Called when the kernel is switching to a new process, with process
+ * identifier "pid".
+ */
+extern void vm_switch(pid_t pid){
     
 }
 
@@ -150,5 +193,11 @@ int vm_fault(const void* addr, bool write_flag)
  */
 void vm_destroy()
 {
+    // when we pop the phys pages from the dequeu remembert to keep in sync with the map
     pid_to_arena.erase(current_running_pid);
+
+    // make sure that the last virtual page pointing to
+    // a physical page is made the sole owner
+    // i.e. if the last owner is dirty, set W = 1 because 
+    // he is now able to write with impunity 
 }

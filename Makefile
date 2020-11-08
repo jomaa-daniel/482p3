@@ -1,7 +1,7 @@
 CC=g++ -g -Wall -fno-builtin
 
 # List of source files for your pager
-PAGER_SOURCES=pager.cpp Arena.cpp Virtual_Page.cpp
+PAGER_SOURCES=pager.cpp Arena.cpp Virtual_Page.cpp utils.cpp
 
 # Generate the names of the pager's object files
 PAGER_OBJS=${PAGER_SOURCES:.cpp=.o}

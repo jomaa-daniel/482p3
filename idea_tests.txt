@@ -9,12 +9,13 @@
 9. evict a swap block with one owner
 10. max out the swap file
 11. max out the virtual space
-12 
-13.
-14.
-15.
-16.
-17.
+12. Delete a virtual page that doesnt share a physical page and make sure
+that physical page is used for the next vm_fault and not another run of clock eviction algorithm 
+13. vm_fault on an invalid page (out of bounds)
+14. vm_fault on a page that is old(not referenced) and dirty/write enabled
+15. fork a dirty phyiscal page then try to write to it with a child processs
+16. copy on write to a page that is about to get evicted
+17. fork then write to the forked pages to fill up memory using copy on write. Then cause an eviction
 18.
 
 

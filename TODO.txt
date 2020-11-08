@@ -1,0 +1,22 @@
+1. Copying a physical page if it has been evicted from physmem/clock
+2. propigate zeroing out of write flags on sharing of a physical page as a result
+    of fork
+3.  make sure that the last virtual page pointing to a physical page is
+     made the sole owneri.e. if the last owner is dirty, set W = 1 because 
+     he is now able to write with impunity 
+4. refactor the create new physical page s.t. it does not rely on a new swap block
+    being created
+
+
+
+
+
+
+
+
+
+
+
+
+
+
