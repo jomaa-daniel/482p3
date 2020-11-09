@@ -407,13 +407,64 @@ bool sync_all()
    // make sure that number of total virutal pages that are in clock are in sync with the total number of owners in ppage
 
     // make sure that the number of virutal pages that are in mem are in sync with the total number of owners in swap
-
+    return false;
     //
 }
 
 bool assert_no_dirty_pages(Physical_Page* page)
 {
     return false;
+}
+
+bool assert_clock_and_pages_sync()
+{
+    // count the number of pages in the arena that say they are in clock
+    int page_count = 0;
+
+    for (auto& arena : pid_to_arena)
+    {
+        for (auto virutal_page : arena.second->virtual_pages)
+        {
+            if (virutal_page.second->in_clock)
+            {
+                ++page_count;
+            }
+        }
+    }
+    
+    int owner_count = 0;
+    // now count the number of owners in ppage to owners
+    for (auto& owner_set : ppage_to_owners)
+    {
+        page_count += owner_set.second.size();
+    }
+
+    return owner_count == page_count;
+}
+
+bool assert_swap_and_pages_sync()
+{
+    int page_count = 0;
+
+    for (auto& arena : pid_to_arena)
+    {
+        for (auto virutal_page : arena.second->virtual_pages)
+        {
+            if (virutal_page.second->in_swap)
+            {
+                ++page_count;
+            }
+        }
+    }
+    
+    int owner_count = 0;
+    // now count the number of owners in ppage to owners
+    for (auto& owner_set : swap_block_to_owners)
+    {
+        page_count += owner_set.second.size();
+    }
+
+    return owner_count == page_count;
 }
 
 #endif /* _VM_PAGER_H_ */

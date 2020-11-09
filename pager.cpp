@@ -168,6 +168,10 @@ int vm_fault(const void* addr, bool write_flag)
             handle_fault_swap(write_flag, current_page);
         }
 
+        assert(assert_clock_and_pages_sync());
+        assert(assert_swap_and_pages_sync());
+        return 0;
+
     }
     catch(const std::exception& e)
     {

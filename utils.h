@@ -73,5 +73,10 @@ bool sync_all();
 
 bool assert_not_owner(Virtual_Page* page);
 
+// make sure this accounts for the zero page
+bool assert_clock_and_pages_sync();
+
+bool assert_swap_and_pages_sync();
+
 bool assert_no_dirty_pages(Physical_Page* page);
 #endif /* _VM_PAGER_H_ */
