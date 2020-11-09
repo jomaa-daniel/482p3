@@ -181,8 +181,11 @@ int vm_fault(const void* addr, bool write_flag)
  * Called when the kernel is switching to a new process, with process
  * identifier "pid".
  */
-extern void vm_switch(pid_t pid){
-    
+extern void vm_switch(pid_t pid)
+{
+    current_running_pid = pid;
+    current_arena = pid_to_arena[pid];
+    page_table_base_register = &current_arena->page_table;
 }
 
 /*

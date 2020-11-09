@@ -4,8 +4,9 @@
 
 Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false) 
 {
-    //iterate valid_arena_bound 
-    if (current_arena->valid_arena_bound + VM_PAGESIZE > VM_ARENA_SIZE ||
+    //iterate valid_arena_bound // TODO this does not look right, 
+    if (current_arena->valid_arena_bound + VM_PAGESIZE > 
+        current_arena->valid_arena_bound + VM_ARENA_SIZE ||
         current_arena->valid_arena_bound < uintptr_t(VM_ARENA_BASEADDR))
     { 
         throw NotEnoughVirtualMemory();
@@ -42,7 +43,7 @@ Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false)
 
     //Iterate arena bound for next page
     current_arena->valid_arena_bound = 
-        current_arena->valid_arena_bound + VM_PAGESIZE - 1;
+        current_arena->valid_arena_bound + VM_PAGESIZE;
 }
 
 Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, 

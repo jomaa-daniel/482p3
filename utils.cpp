@@ -21,7 +21,9 @@ unsigned int get_virtual_page_num(const void* addr)
     return address & mask;
 }
 
-unsigned int find_open_block() { 
+unsigned int find_open_block() {
+    if (DEBUG)
+    cout << "find open block\n"; 
     //check if current is avaiable
     while(swap_block_to_owners.find(current_available_block)
      != swap_block_to_owners.end())
@@ -31,8 +33,30 @@ unsigned int find_open_block() {
     return current_available_block;
 }
 
+void handle_last_owner(Physical_Page& old_phys_page)
+{
+    if (DEBUG)
+    cout << "handle last owner\n";
+    // if there is one more page left, check for a fix
+    // that makes sure that the next write will succeed if write enabled
+
+    if (ppage_to_owners[old_phys_page.ppage_location].size() == 1)
+    {
+        Virtual_Page* last_owner = *begin(ppage_to_owners[old_phys_page.ppage_location]);
+        // dont want to accidentally make it life when it is not referenced
+        if (last_owner->entry->read_enable == 1)
+        {
+        // this if there is one owner they should not fault on a write
+            last_owner->entry->write_enable = old_phys_page.dirty;
+        }
+        
+    }
+}
 
 bool check_ppage_owners_age(Physical_Page *phys_page){
+
+    if (DEBUG)
+    cout << "check ppage owners age\n";
 
     bool recent = (*begin(ppage_to_owners[phys_page->ppage_location]))->entry->read_enable;
     
@@ -60,6 +84,8 @@ bool check_ppage_owners_age(Physical_Page *phys_page){
 // should we delete here and return a physical page on the stack?
 Physical_Page find_victim()
 {
+    if (DEBUG)
+    cout << "find victim\n";
     // make sure to keep in parallel with map
     //delete from deque and map
     Physical_Page* next_page = nullptr;
@@ -91,6 +117,8 @@ Physical_Page find_victim()
 
 void write_to_swap(Virtual_Page* page)
 {
+    if (DEBUG)
+    cout << "write to swap\n";
     // if this is the first eviction of this virtual page, allocate new swap file block
     // update page block
     if (page->in_swap == false)
@@ -106,7 +134,8 @@ void write_to_swap(Virtual_Page* page)
 
 void evict_phys_page(Physical_Page& page)
 {
-
+    if (DEBUG)
+    cout << "evict phys page\n";
     // propigate is_mem false
     unordered_set<Virtual_Page*> owners = ppage_to_owners[page.ppage_location]; 
 
@@ -162,8 +191,11 @@ void evict_phys_page(Physical_Page& page)
 
 // allocates and adds new physical page to the clock
 // make sure to keep parallel with the map
-Physical_Page* add_new_page_to_clock(unsigned int ppage_location, bool write_flag, Virtual_Page* page)
+Physical_Page* add_new_page_to_clock(unsigned int ppage_location, 
+    bool write_flag)
 {
+    if (DEBUG)
+    cout << "add_new_page_to_clock\n";
 
     // VM_Fault takes care of write/dirty
     // we need to overwrite dirty in the case of is_swap
@@ -179,7 +211,6 @@ Physical_Page* add_new_page_to_clock(unsigned int ppage_location, bool write_fla
     mem_clock.push_back(new_page);
     ppage_in_clock[ppage_location] = new_page;
 
-
     // Update virtual pages who point to swap so they 
     //know where their new ppage is and update
 
@@ -188,34 +219,10 @@ Physical_Page* add_new_page_to_clock(unsigned int ppage_location, bool write_fla
 
     // Writeflag-true : R:1, W:1 , dirty_bit : 1, in_mem= 1
     // Writeflag-false: R:1, W:0, dirty_bit: 0, in_mem=1
-    if (page->in_swap and !page->in_clock)
-    {
-        unordered_set<Virtual_Page*> &owners = swap_block_to_owners[page->block];
-
-        for (auto virtual_page : owners)
-        {
-            // each virtual page needs to be aware that it has a swap block
-            //  despite already being in swap_block_to_owners
-            assert(virtual_page->in_swap);
-
-            virtual_page->in_clock = true;
-            virtual_page->entry->ppage = ppage_location; // TODO is this right??
-            virtual_page->entry->read_enable = 1;
-            virtual_page->entry->write_enable = write_flag;
-            // ppage_to_owners[page->entry->ppage].insert(virtual_page); // TODO is this right?
-        }
-        ppage_to_owners[ppage_location] = owners;
-    }
-    else
-    {
-        // add new page to the ppage_
-        // update the current virtual page to match the page table of the rest of the owners
-        // assert that all of the owners share the same state i.e. read/write
-
-
-    } 
-    
-
+    // add new page to the ppage_
+    // update the current virtual page to match the page table of the rest of the owners
+    // assert that all of the owners share the same state i.e. read/write
+    // fix for: TODO 4,2
     // migrate all of the owners from the swap file to the physical page owners
     
     return new_page;
@@ -234,73 +241,6 @@ bool assert_not_owner(Virtual_Page* page)
     return true;
 }
 
-bool not_valid_addr(uintptr_t addr)
-{
-        // thats what i thought
-    return (addr < uintptr_t(VM_ARENA_BASEADDR) or 
-    addr >  (uintptr_t(VM_ARENA_BASEADDR) + VM_ARENA_SIZE) or 
-    addr > current_arena->valid_arena_bound);
-}
-
-
-void handle_fault_clock(bool write_flag, Virtual_Page* page)
-{
-    //Assert existence of ppage in owners
-    assert(ppage_to_owners.find(page->entry->ppage) != end(ppage_to_owners));
-    
-    //assert this virtual page actually owns this physical page
-    assert(ppage_to_owners[page->entry->ppage].find(page) != end(ppage_to_owners[page->entry->ppage]));
-    
-    //assert this ppage is owned by this virtual page
-    assert(ppage_in_clock.find(page->entry->ppage) != end(ppage_in_clock));
-    
-    // R;0 W;0 Not referenced so update reference -> R:1, W:? in_mem = true
-    // R:1 W:0 not dirty so update to dirty R:1, W:1 and ppage=dirty
-    // R;0 W;0 SHARED Not referenced so update reference -> R:1, W:? in_mem = true
-    // R:1 W:0 SHARED not dirty so update to dirty R:1, W:1 and ppage=dirty
-    // R:0 W:1 assert not possible 
-    //Propigate to all virtual owners
-
-    //If dirty or write == 1 we must create a new ppage and give it a new swap.
-
-    unordered_set<Virtual_Page*>& associated_pages = ppage_to_owners[page->entry->ppage];
-    bool & d_bit = ppage_in_clock[page->entry->ppage]->dirty;
-    if (write_flag and ppage_to_owners[page->entry->ppage].size() != 1)
-    {
-        // give new phys page and swap block, pop from current owners
-        page->block = find_open_block();
-        swap_block_to_owners[page->block] = unordered_set<Virtual_Page*>();
-        swap_block_to_owners[page->block].insert(page);
-        Physical_Page *ppage = create_phys_page(page, write_flag);
-        //Could have just evicted the physical page that we just copied
-        *ppage = ppage_in_clock()
-        
-
-        
-
-    // what happens when the last remanining page is dity but not write enabled when its still not old
-
-    }
-    else
-    {
-        // propigate a referenced accross all associated pages
-        for (auto assoc_page : associated_pages)
-        {
-            assert(assoc_page->in_clock);
-            assert(page->entry->write_enable ==0 and 
-            (page->entry->read_enable == 0 or page->entry->read_enable==1));
-            assoc_page->entry->read_enable = 1;
-            if (write_flag) // it only reaches this case if there is 
-                            // one owner,else it would branch into above if statement
-            {
-                assoc_page->entry->write_enable = d_bit;
-            }
-        }
-    }
-    
-
-}
-
 unsigned int find_ppage()
 {
     for(unsigned int i = 1; i < MAX_PHYSICAL_MEM_SIZE; ++i){
@@ -311,8 +251,19 @@ unsigned int find_ppage()
     assert(false);
     return 0;
 }
-Physical_Page* create_phys_page(Virtual_Page* page, bool write_flag)
+
+bool not_valid_addr(uintptr_t addr)
 {
+        // thats what i thought
+    return (addr < uintptr_t(VM_ARENA_BASEADDR) or 
+    addr >  (uintptr_t(VM_ARENA_BASEADDR) + VM_ARENA_SIZE) or 
+    addr > current_arena->valid_arena_bound);
+}
+
+Physical_Page* create_phys_page(bool write_flag)
+{
+    if (DEBUG)
+    cout << "create_phys_page\n";
     //Need to bring you into memory 
     //Check if there are any empty ppages to add to
     //if not evict and do (associated changes in eviction)
@@ -332,8 +283,84 @@ Physical_Page* create_phys_page(Virtual_Page* page, bool write_flag)
         free_ppage = find_ppage();
     }
 
-    return add_new_page_to_clock(free_ppage, write_flag, page);  
+    return add_new_page_to_clock(free_ppage, write_flag);  
 }
+
+
+void handle_fault_clock(bool write_flag, Virtual_Page* page)
+{
+    if (DEBUG)
+    cout << "handle fault clock\n";
+    //Assert existence of ppage in owners
+    assert(ppage_to_owners.find(page->entry->ppage) != end(ppage_to_owners));
+    
+    //assert this virtual page actually owns this physical page
+    assert(ppage_to_owners[page->entry->ppage].find(page) != end(ppage_to_owners[page->entry->ppage]));
+    
+    //assert this ppage is owned by this virtual page
+    assert(ppage_in_clock.find(page->entry->ppage) != end(ppage_in_clock));
+    
+    // R;0 W;0 Not referenced so update reference -> R:1, W:? in_mem = true
+    // R:1 W:0 not dirty so update to dirty R:1, W:1 and ppage=dirty
+    // R;0 W;0 SHARED Not referenced so update reference -> R:1, W:? in_mem = true
+    // R:1 W:0 SHARED not dirty so update to dirty R:1, W:1 and ppage=dirty
+    // R:0 W:1 assert not possible 
+    //Propigate to all virtual owners
+
+    //If dirty or write == 1 we must create a new ppage and give it a new swap.
+
+    unordered_set<Virtual_Page*>& associated_pages = 
+            ppage_to_owners[page->entry->ppage];
+
+    bool & d_bit = ppage_in_clock[page->entry->ppage]->dirty;
+
+    // copy on write, shared physical ppage
+    if (write_flag and ppage_to_owners[page->entry->ppage].size() != 1)
+    {
+        // give new phys page and swap block, pop from current owners
+        // REMOVED THE ADDING TO THE SWAP BLOCK CODE
+        
+        // create a local copy of phys_page
+        Physical_Page  old_ppage = *(ppage_in_clock[page->entry->ppage]);
+
+        Physical_Page * new_ppage = create_phys_page(write_flag);    
+        // remove itself as an owner of the old physical page
+        ppage_to_owners[page->entry->ppage].erase(page);
+
+        // handle what happens if one owner is left
+        handle_last_owner(old_ppage);
+
+        /* 
+            this solves the issue of the phys page being dealloc'ed by
+            this point because really what are we copying over? a certain
+            spot in phys_mem which doesnt change even if we dealloc the phy
+            page that points to it.
+
+        */
+        *new_ppage = old_ppage;
+    
+    }
+    else
+    {
+        // propigate a referenced accross all associated pages
+        for (auto assoc_page : associated_pages)
+        {
+            assert(assoc_page->in_clock);
+            assert(page->entry->write_enable ==0 and 
+            (page->entry->read_enable == 0 or page->entry->read_enable==1));
+            assoc_page->entry->read_enable = 1;
+            if (write_flag) // it only reaches this case if there is 
+                            // one owner,else it would branch into above if statement
+            {
+                assoc_page->entry->write_enable = d_bit;
+            }
+        }
+    }
+}
+
+
+
+
 
 void handle_fault_swap(bool write_flag, Virtual_Page* page)
 {
@@ -348,11 +375,31 @@ void handle_fault_swap(bool write_flag, Virtual_Page* page)
     
     //Assert you have proper enables
     assert(page->entry->read_enable == 0 and page->entry->write_enable == 0);
-    
-    create_phys_page(page, write_flag);
-    
+
+    // adds to clock
+    Physical_Page* new_phys_page = create_phys_page(write_flag);
+
+    // TODO propigate moving the swap file from swap to phys
+    unordered_set<Virtual_Page*> &owners = swap_block_to_owners[page->block];
+
+    for (auto virtual_page : owners)
+    {
+        // each virtual page needs to be aware that it has a swap block
+        //  despite already being in swap_block_to_owners
+        assert(virtual_page->in_swap);
+
+        virtual_page->in_clock = true;
+        virtual_page->entry->ppage = new_phys_page->ppage_location; // TODO is this right??
+        virtual_page->entry->read_enable = 1;
+        virtual_page->entry->write_enable = write_flag;
+        // ppage_to_owners[page->entry->ppage].insert(virtual_page); // TODO is this right?
+    }
+
+    ppage_to_owners[new_phys_page->ppage_location] = owners;
     file_read(nullptr, page->block, (void *) (uintptr_t(vm_physmem) + (VM_PAGESIZE * page->entry->ppage)));
 }
+
+
 
 /////////////////// ASSERT FUNCTIONS //////////////////
 bool sync_all()

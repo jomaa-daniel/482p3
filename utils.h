@@ -32,6 +32,8 @@ unsigned int get_virtual_page_num(const void* addr);
 
 unsigned int find_open_block();
 
+unsigned int find_ppage();
+
 bool check_ppage_owners_age(Physical_Page *phys_page);
 
 // keeps pushing and popping till it finds something to evict
@@ -41,7 +43,7 @@ Physical_Page find_victim();
 
 // allocates and adds new physical page to the clock
 // make sure to keep parallel with the map
-Physical_Page* add_new_page_to_clock(unsigned int ppage_location, bool dirty);
+Physical_Page* add_new_page_to_clock(unsigned int ppage_location, bool write_flag);
 
 // TAKE NOTE THAT THERE IS A POSSIBILITY THAT THE PHYSICAL PAGE HAS NO OWNERS
 //  they might have been dealloc while still having v_pages pointing to phys pages
@@ -56,11 +58,14 @@ void handle_fault_clock(uintptr_t addr, bool write_flag);
 
 void handle_fault_swap(bool write_flag, Virtual_Page* page);
 
+void handle_last_owner(Physical_Page* old_phys_page);
+
 void handle_fault_clock(bool write_flag, Virtual_Page* page);
 
 void write_to_swap(Virtual_Page* page);
 
-Physical_Page* create_phys_page(Virtual_Page* page, bool write_flag);
+
+Physical_Page* create_phys_page(bool write_flag);
 
 
 /////////////////// ASSERT FUNCTIONS //////////////////
