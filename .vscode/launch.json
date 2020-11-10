@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/pager",
-            "args": ["-s", "10"],
+            "args": ["-s", "1024"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

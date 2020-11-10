@@ -523,7 +523,11 @@ bool assert_ppage_owners_sync()
 
 bool assert_swap_block_owners_sync()
 {
-
+    if (swap_block_to_owners.size() == 1024)
+    {
+        int a = 1;
+        
+    }
     for(const auto& block_owner_pair : swap_block_to_owners){
         const auto first_vp = *begin(block_owner_pair.second);
 
