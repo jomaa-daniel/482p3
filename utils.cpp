@@ -515,13 +515,14 @@ bool assert_ppage_owners_sync()
     return true;
 }
 
-bool assert_swap_block_owners_sync(){
+bool assert_swap_block_owners_sync()
+{
 
     for(const auto& block_owner_pair : swap_block_to_owners){
-        const auto first_vp = begin(block_owner_pair.second);
+        const auto first_vp = *begin(block_owner_pair.second);
 
         for(const auto vp : block_owner_pair.second){
-            if(!(vp == *first_vp)){
+            if(!(*vp == *(first_vp))){
                 return false;
             }
         }
