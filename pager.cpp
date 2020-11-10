@@ -49,7 +49,7 @@ void vm_init(unsigned int memory_pages, unsigned int swap_blocks)
  * Returns 0 on success, -1 on failure.
  */
 int vm_create(pid_t parent_pid, pid_t child_pid)
-{
+{   
     Arena* arena = nullptr;
     // check to see if the parent PID exists, if it does not, zeros
     if (pid_to_arena.find(parent_pid) == end(pid_to_arena))
@@ -65,6 +65,9 @@ int vm_create(pid_t parent_pid, pid_t child_pid)
     }
 
     pid_to_arena[child_pid] = arena;
+    
+    assert_all();
+
     return 0;
 }
 
@@ -93,7 +96,6 @@ int vm_create(pid_t parent_pid, pid_t child_pid)
  */
 void *vm_map(const char *filename, unsigned int block)
 {
-
     //Creating virtual page bound checks and moves valid bound
     // as well as checks and moves bound for swap memory.
     //If virtual page constructor throws we catch and return nullptr. 
@@ -102,10 +104,10 @@ void *vm_map(const char *filename, unsigned int block)
 
     //Update ppage_to_owners new virtual page points to the 0 page (shared/probably)
 
-    Virtual_Page *vp = nullptr;
+    
     try
     {
-        vp = new Virtual_Page();
+        new Virtual_Page();
     }
     catch(NotEnoughVirtualMemory& e)
     {
@@ -124,6 +126,8 @@ void *vm_map(const char *filename, unsigned int block)
         return nullptr; 
     }
     
+    assert_all();
+
     //Returning the previous address since we are using current for our next future vp
     return (void *) (current_arena->valid_arena_bound - VM_PAGESIZE);
 }
@@ -138,6 +142,7 @@ void *vm_map(const char *filename, unsigned int block)
  */
 int vm_fault(const void* addr, bool write_flag)
 {
+
     uintptr_t address = uintptr_t(addr);
     //Check if addr is invalid (bound check?)
     if (not_valid_addr(address))
@@ -153,8 +158,10 @@ int vm_fault(const void* addr, bool write_flag)
     
     //assert page_table[addr] is equal to page->entry
     // assert the entry pointers match table and V-page
+    
     assert(&(current_arena->page_table.ptes[base_address])
      == current_page->entry);
+     
     // can a page ever be not in swap nor mem?
     try
     {
@@ -163,21 +170,26 @@ int vm_fault(const void* addr, bool write_flag)
             handle_fault_clock(write_flag, current_page);
         }
         // only in swap file/Or the 0 page, needs to be brought to phys mem
-        else
+        else if (current_page->in_swap)
         {
             handle_fault_swap(write_flag, current_page);
         }
+        else
+        {
+            handle_fault_zero(write_flag, current_page);
+        }
+        
 
-        assert(assert_clock_and_pages_sync());
-        assert(assert_swap_and_pages_sync());
+        assert_all();
         return 0;
 
     }
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
+        return -1;
     }   
-    
+    return -1;
 }
 /*
  * vm_switch
@@ -190,6 +202,7 @@ extern void vm_switch(pid_t pid)
     current_running_pid = pid;
     current_arena = pid_to_arena[pid];
     page_table_base_register = &current_arena->page_table;
+    assert_all();
 }
 
 /*
@@ -200,6 +213,7 @@ extern void vm_switch(pid_t pid)
  */
 void vm_destroy()
 {
+    delete current_arena;
     // when we pop the phys pages from the dequeu remembert to keep in sync with the map
     pid_to_arena.erase(current_running_pid);
 
@@ -207,4 +221,5 @@ void vm_destroy()
     // a physical page is made the sole owner
     // i.e. if the last owner is dirty, set W = 1 because 
     // he is now able to write with impunity 
+    assert_all();
 }

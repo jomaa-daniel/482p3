@@ -62,6 +62,8 @@ void handle_last_owner(Physical_Page* old_phys_page);
 
 void handle_fault_clock(bool write_flag, Virtual_Page* page);
 
+void handle_fault_zero(bool write_flag, Virtual_Page* page);
+
 void write_to_swap(Virtual_Page* page);
 
 
@@ -69,14 +71,30 @@ Physical_Page* create_phys_page(bool write_flag);
 
 
 /////////////////// ASSERT FUNCTIONS //////////////////
-bool sync_all();
-
-bool assert_not_owner(Virtual_Page* page);
+void assert_all();
 
 // make sure this accounts for the zero page
 bool assert_clock_and_pages_sync();
 
 bool assert_swap_and_pages_sync();
 
+bool assert_ppage_owners_sync();
+
+bool assert_swap_block_owners_sync();
+
+bool assert_clock_map_match();
+
+bool assert_no_write_on_share();
+
+bool assert_same_ppage_same_block();
+
 bool assert_no_dirty_pages(Physical_Page* page);
+
+bool assert_ppage_map_correctness();
+
+bool assert_swap_map_correctness();
+
+bool assert_zero_page_correctness();
+
+bool assert_valid_swap_owners();
 #endif /* _VM_PAGER_H_ */

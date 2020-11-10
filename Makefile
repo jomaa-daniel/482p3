@@ -14,7 +14,7 @@ pager: ${PAGER_OBJS} libvm_pager_core.o
 	${CC} -o $@ $^
 
 # Compile an application program
-app: test_simple.cpp libvm_app_core.o
+app: test_evict_writeback_NS.4.cpp libvm_app_core.o
 	${CC} -o $@ $^ -ldl
 
 # Generic rules for compiling a source file to an object file

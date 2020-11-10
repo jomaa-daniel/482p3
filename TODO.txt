@@ -9,9 +9,7 @@
 
 
 
-
-
-
+5.) why is swap_block_to_owner[1] = {} ???? 
 
 
 

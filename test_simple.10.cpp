@@ -10,4 +10,6 @@ int main()
     /* Allocate swap-backed page from the arena */
     char *filename = (char *) vm_map(nullptr, 0);
     strcpy(filename, "shakespeare.txt");
+    printf(filename);
+
 }

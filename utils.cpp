@@ -18,12 +18,11 @@ unsigned int get_virtual_page_num(const void* addr)
     uintptr_t address = (uintptr_t) addr;
     uintptr_t mask = 0xFFFFFFFFFFFFF000;
 
-    return address & mask;
+    return ((address & mask)- uintptr_t(VM_ARENA_BASEADDR))/VM_PAGESIZE;
 }
 
 unsigned int find_open_block() {
-    if (DEBUG)
-    cout << "find open block\n"; 
+
     //check if current is avaiable
     while(swap_block_to_owners.find(current_available_block)
      != swap_block_to_owners.end())
@@ -35,8 +34,7 @@ unsigned int find_open_block() {
 
 void handle_last_owner(Physical_Page& old_phys_page)
 {
-    if (DEBUG)
-    cout << "handle last owner\n";
+
     // if there is one more page left, check for a fix
     // that makes sure that the next write will succeed if write enabled
 
@@ -68,7 +66,7 @@ bool check_ppage_owners_age(Physical_Page *phys_page){
 
 
     for( auto vp : ppage_to_owners[phys_page->ppage_location] ){
-        assert(recent != vp->entry->read_enable);
+        assert(recent == vp->entry->read_enable);// CHANGED FROM != to ==
         if(vp->entry->read_enable == 1){
             assert(vp->entry->write_enable == phys_page->dirty);
             vp->entry->read_enable = 0;
@@ -84,8 +82,7 @@ bool check_ppage_owners_age(Physical_Page *phys_page){
 // should we delete here and return a physical page on the stack?
 Physical_Page find_victim()
 {
-    if (DEBUG)
-    cout << "find victim\n";
+
     // make sure to keep in parallel with map
     //delete from deque and map
     Physical_Page* next_page = nullptr;
@@ -129,23 +126,24 @@ void write_to_swap(Virtual_Page* page)
     // TODO copy on write for shared swap files
 
     // write page to swap block (call flie_write from infrastructure)
-    file_write(nullptr, page->block, vm_physmem + (page->entry->ppage * VM_PAGESIZE)); 
+    file_write(nullptr, page->block, (void*) (uintptr_t(vm_physmem) + (page->entry->ppage * VM_PAGESIZE))); 
 }
 
 void evict_phys_page(Physical_Page& page)
 {
-    if (DEBUG)
-    cout << "evict phys page\n";
+    
     // propigate is_mem false
     unordered_set<Virtual_Page*> owners = ppage_to_owners[page.ppage_location]; 
 
-    unsigned int written_to_block;
+    //Using 99999 as an obvious error checker
+    unsigned int written_to_block = 99999;
 
     if (page.dirty)
     {
         write_to_swap(*begin(owners));
-        written_to_block = (*begin(owners))->block;
     }
+
+    written_to_block = (*begin(owners))->block;
 
     for (auto virtual_page : owners)
     {
@@ -153,7 +151,12 @@ void evict_phys_page(Physical_Page& page)
         virtual_page->entry->write_enable == 0 and virtual_page->in_clock);
         virtual_page->in_clock = false;
         virtual_page->in_swap = true;
-        virtual_page->block = written_to_block;       
+
+        if (page.dirty)
+        {
+            virtual_page->block = written_to_block;
+        }
+        
     }
     // if(first time evict){
         //get the new swap block
@@ -233,7 +236,8 @@ bool assert_not_owner(Virtual_Page* page)
 {
     for (auto& page_sets : ppage_to_owners)
     {
-        if (page_sets.second.find(page) == end(page_sets.second))
+        // TODO verify // changed from == to != 
+        if (page_sets.second.find(page) != end(page_sets.second))
         {
             return false;
         }        
@@ -289,8 +293,7 @@ Physical_Page* create_phys_page(bool write_flag)
 
 void handle_fault_clock(bool write_flag, Virtual_Page* page)
 {
-    if (DEBUG)
-    cout << "handle fault clock\n";
+
     //Assert existence of ppage in owners
     assert(ppage_to_owners.find(page->entry->ppage) != end(ppage_to_owners));
     
@@ -308,7 +311,7 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
     //Propigate to all virtual owners
 
     //If dirty or write == 1 we must create a new ppage and give it a new swap.
-
+    page_table_entry_t * c = &current_arena->page_table.ptes[4096];
     unordered_set<Virtual_Page*>& associated_pages = 
             ppage_to_owners[page->entry->ppage];
 
@@ -326,6 +329,12 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
         Physical_Page * new_ppage = create_phys_page(write_flag);    
         // remove itself as an owner of the old physical page
         ppage_to_owners[page->entry->ppage].erase(page);
+        // remove itself as an owner of the old swap file/set swap to false
+        if (page->in_swap)
+        {
+            swap_block_to_owners[page->block].erase(page);
+            page->in_swap = false;
+        }
 
         // handle what happens if one owner is left
         handle_last_owner(old_ppage);
@@ -346,7 +355,7 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
         for (auto assoc_page : associated_pages)
         {
             assert(assoc_page->in_clock);
-            assert(page->entry->write_enable ==0 and 
+            assert(page->entry->write_enable == 0 and 
             (page->entry->read_enable == 0 or page->entry->read_enable==1));
             assoc_page->entry->read_enable = 1;
             if (write_flag) // it only reaches this case if there is 
@@ -359,23 +368,20 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
 }
 
 
-
-
-
 void handle_fault_swap(bool write_flag, Virtual_Page* page)
 {
+
     // assert that the swap block is in fact valid
     assert(swap_block_to_owners.find(page->block) != end(swap_block_to_owners));
 
     // assert this virtual page is an owner of the block
     assert(swap_block_to_owners[page->block].find(page) != end(swap_block_to_owners[page->block]));
-    
+
     //assert that this virtual page is not an owner of any ppages.
     assert(assert_not_owner(page));
-    
     //Assert you have proper enables
     assert(page->entry->read_enable == 0 and page->entry->write_enable == 0);
-
+    
     // adds to clock
     Physical_Page* new_phys_page = create_phys_page(write_flag);
 
@@ -399,56 +405,71 @@ void handle_fault_swap(bool write_flag, Virtual_Page* page)
     file_read(nullptr, page->block, (void *) (uintptr_t(vm_physmem) + (VM_PAGESIZE * page->entry->ppage)));
 }
 
+void handle_fault_zero(bool write_flag, Virtual_Page* page)
+{
+    assert(write_flag);
+
+    // adds to clock
+    Physical_Page* new_phys_page = create_phys_page(write_flag);
+    zero_out_ppage(new_phys_page->ppage_location);
+
+    page->entry->ppage = new_phys_page->ppage_location;
+    page->entry->read_enable = 1;
+    page->entry->write_enable = 1;
+    page->in_clock = true;
+    assert(page->in_swap == false);
+
+    assert (ppage_to_owners.find(new_phys_page->ppage_location) == end(ppage_to_owners));
+    
+    ppage_to_owners[new_phys_page->ppage_location] = unordered_set<Virtual_Page*>();
+    
+    ppage_to_owners[new_phys_page->ppage_location].insert(page);
+    
+    assert(ppage_to_owners.find(0) != end(ppage_to_owners));
+
+    ppage_to_owners[0].erase(page);
+}
 
 
 /////////////////// ASSERT FUNCTIONS //////////////////
-bool sync_all()
-{
-   // make sure that number of total virutal pages that are in clock are in sync with the total number of owners in ppage
 
-    // make sure that the number of virutal pages that are in mem are in sync with the total number of owners in swap
-    return false;
-    //
-}
 
-bool assert_no_dirty_pages(Physical_Page* page)
-{
-    return false;
-}
 
 bool assert_clock_and_pages_sync()
 {
     // count the number of pages in the arena that say they are in clock
-    int page_count = 0;
+    int virtual_page_count = 0;
 
-    for (auto& arena : pid_to_arena)
+    for (const auto& arena : pid_to_arena)
     {
-        for (auto virutal_page : arena.second->virtual_pages)
+        for (const auto virutal_page : arena.second->virtual_pages)
         {
-            if (virutal_page.second->in_clock)
+            if (virutal_page.second->in_clock or
+                virutal_page.second->entry->ppage == 0)
             {
-                ++page_count;
+                ++virtual_page_count;
             }
         }
     }
     
     int owner_count = 0;
     // now count the number of owners in ppage to owners
-    for (auto& owner_set : ppage_to_owners)
+    for (const auto& owner_set : ppage_to_owners)
     {
-        page_count += owner_set.second.size();
+        int sz = owner_set.second.size();
+        owner_count += sz;
     }
 
-    return owner_count == page_count;
+    return owner_count == virtual_page_count;
 }
 
 bool assert_swap_and_pages_sync()
 {
     int page_count = 0;
 
-    for (auto& arena : pid_to_arena)
+    for (const auto& arena : pid_to_arena)
     {
-        for (auto virutal_page : arena.second->virtual_pages)
+        for (const auto virutal_page : arena.second->virtual_pages)
         {
             if (virutal_page.second->in_swap)
             {
@@ -459,12 +480,233 @@ bool assert_swap_and_pages_sync()
     
     int owner_count = 0;
     // now count the number of owners in ppage to owners
-    for (auto& owner_set : swap_block_to_owners)
+    for (const auto& owner_set : swap_block_to_owners)
     {
-        page_count += owner_set.second.size();
+        int sz = owner_set.second.size();
+        owner_count += sz;
     }
 
     return owner_count == page_count;
 }
 
+bool assert_ppage_owners_sync()
+{
+    for (const auto & owner_set : ppage_to_owners)
+    {
+        if (!owner_set.second.empty())
+        {
+            Virtual_Page *base_page = *begin(owner_set.second);
+            
+            for (const auto& page : owner_set.second)
+            {
+                if (!(*base_page == *page))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+bool assert_swap_block_owners_sync(){
+
+    for(const auto& block_owner_pair : swap_block_to_owners){
+        const auto first_vp = begin(block_owner_pair.second);
+
+        for(const auto vp : block_owner_pair.second){
+            if(!(vp == *first_vp)){
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool assert_clock_map_match(){
+    
+    for(auto ppage : mem_clock){
+        if(ppage_in_clock[ppage->ppage_location] != ppage){
+            return false;
+        }
+    }
+    return true;
+}
+
+bool assert_no_write_on_share(){
+    for(const auto& block_owner_pair : swap_block_to_owners){
+        //If its shared
+        if(block_owner_pair.second.size() > 1){
+            for(const auto vp : block_owner_pair.second){
+                if(vp->entry->write_enable == 1){
+                    return false;
+                }
+            }
+        }
+        
+    }
+    for(const auto& ppage_owner_pair : ppage_to_owners){
+        //If its shared
+        if(ppage_owner_pair.second.size() > 1){
+            for(const auto vp : ppage_owner_pair.second){
+                if(vp->entry->write_enable == 1){
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool assert_same_ppage_same_block()
+{
+    
+    // vp1 :in_mem=true ppage = 3 in_swap = true -> block = 10
+    // vp2 :in_mem=true ppage = 3 in_swap = true -> block = 10
+
+    //ppage_to_owners[3] = {vp1, vp2}
+
+
+    for(const auto ppage : mem_clock){
+        if(ppage_to_owners[ppage->ppage_location].size() < 1) return false;
+
+        const unsigned int first_block = 
+            (*begin(ppage_to_owners[ppage->ppage_location]))->block;
+
+        for(const auto vp : ppage_to_owners[ppage->ppage_location])
+        {
+            if(vp->in_swap == true and vp->block != first_block)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool assert_ppage_map_correctness()
+{
+    for (const auto & arena : pid_to_arena)
+    {
+        for (const auto & virtual_page : arena.second->virtual_pages)
+        {
+           if (virtual_page.second->in_clock)
+           {
+               auto result = ppage_to_owners[virtual_page.second->entry->ppage].find(virtual_page.second);
+                if (result == end(ppage_to_owners[virtual_page.second->entry->ppage]))
+                {
+                    return false;
+                }               
+           }
+        }
+    }
+
+    return true;
+}
+
+bool assert_ppage_clock_correctness()
+{
+    for (const auto & arena : pid_to_arena)
+    {
+        for (const auto & virtual_page : arena.second->virtual_pages)
+        {
+           if (virtual_page.second->in_clock)
+           {
+               auto result = ppage_in_clock.find(virtual_page.second->entry->ppage);
+                if (result == end(ppage_in_clock))
+                {
+                    return false;
+                }               
+           }
+        }
+    }
+
+    return true;
+}
+
+bool assert_swap_map_correctness()
+{
+    for (const auto & arena : pid_to_arena)
+    {
+        for (const auto & virtual_page : arena.second->virtual_pages)
+        {
+           if (virtual_page.second->in_swap)
+           {
+               auto result = swap_block_to_owners[virtual_page.second->block].find(virtual_page.second);
+                if (result == end(swap_block_to_owners[virtual_page.second->block]))
+                {
+                    return false;
+                }               
+           }
+        }
+    }
+
+    return true;
+}
+
+bool assert_zero_page_correctness(){
+    for (const auto & arena : pid_to_arena){
+        for (const auto & virtual_page : arena.second->virtual_pages){
+            if(virtual_page.second->entry->ppage == 0){
+                //zero page cant be in clock never evicted
+                if(virtual_page.second->in_clock == true){
+                    return false;
+                }
+                if(virtual_page.second->entry->write_enable == true){
+                    return false;
+                }
+                if(virtual_page.second->entry->read_enable == false){
+                    return false;
+                }
+                if(virtual_page.second->in_swap == true){
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool assert_valid_swap_owners()
+{
+    for (const auto & swap_block : swap_block_to_owners)
+    {
+        if (swap_block.second.empty())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void assert_all()
+{
+    if (DEBUG)
+    return;
+
+    auto peen = begin(swap_block_to_owners);
+
+    assert(assert_clock_and_pages_sync());
+
+    assert(assert_swap_and_pages_sync());
+
+    assert(assert_ppage_owners_sync());
+
+    assert(assert_swap_block_owners_sync());
+
+    assert(assert_clock_map_match());
+
+    assert(assert_no_write_on_share());
+
+    assert(assert_same_ppage_same_block());
+
+    assert(assert_ppage_map_correctness());
+
+    assert(assert_swap_map_correctness());
+
+    assert(assert_zero_page_correctness());
+    
+    assert(assert_valid_swap_owners());
+}
 #endif /* _VM_PAGER_H_ */

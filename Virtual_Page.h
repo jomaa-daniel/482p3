@@ -14,6 +14,14 @@ class Virtual_Page
     unsigned int ppage_entry, bool read_enable, 
     bool write_enable, Arena *arena);    
     bool operator==(const Virtual_Page& rhs);
+    Virtual_Page& operator=(const Virtual_Page& rhs)
+    {
+        this->entry = rhs.entry;
+        in_swap = rhs.in_swap;
+        in_clock = rhs.in_clock;
+        block = rhs.block;
+        return *this;
+    }
     ~Virtual_Page();
     page_table_entry_t* entry;
     //Never the case where shared virtual pages have conflicting blocks
