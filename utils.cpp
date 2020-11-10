@@ -8,7 +8,8 @@ unsigned int current_available_block = 0;
 
 void zero_out_ppage(unsigned int ppage)
 {
-    for(unsigned int i = ppage * VM_PAGESIZE; i < VM_PAGESIZE; ++i) {
+    for(unsigned int i = ppage * VM_PAGESIZE; 
+    i < (ppage * VM_PAGESIZE) + VM_PAGESIZE; ++i) {
         ((char *)vm_physmem)[i] = 0;
     }
 }
