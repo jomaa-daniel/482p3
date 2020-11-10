@@ -53,8 +53,6 @@ void handle_last_owner(Physical_Page& old_phys_page)
 
 bool check_ppage_owners_age(Physical_Page *phys_page){
 
-    if (DEBUG)
-    cout << "check ppage owners age\n";
 
     bool recent = (*begin(ppage_to_owners[phys_page->ppage_location]))->entry->read_enable;
     
@@ -65,10 +63,13 @@ bool check_ppage_owners_age(Physical_Page *phys_page){
         // assert ALL of them are not old and change them to old at the same 
 
 
-    for( auto vp : ppage_to_owners[phys_page->ppage_location] ){
+    for ( auto vp : ppage_to_owners[phys_page->ppage_location] ){
         assert(recent == vp->entry->read_enable);// CHANGED FROM != to ==
-        if(vp->entry->read_enable == 1){
-            assert(vp->entry->write_enable == phys_page->dirty);
+        if (vp->entry->read_enable == 1){
+            if (ppage_to_owners.find(phys_page->ppage_location)->second.size()==1)
+            {
+                assert(vp->entry->write_enable == phys_page->dirty);    
+            }
             vp->entry->read_enable = 0;
             vp->entry->write_enable = 0;
         }
@@ -197,8 +198,7 @@ void evict_phys_page(Physical_Page& page)
 Physical_Page* add_new_page_to_clock(unsigned int ppage_location, 
     bool write_flag)
 {
-    if (DEBUG)
-    cout << "add_new_page_to_clock\n";
+
 
     // VM_Fault takes care of write/dirty
     // we need to overwrite dirty in the case of is_swap
@@ -311,7 +311,6 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
     //Propigate to all virtual owners
 
     //If dirty or write == 1 we must create a new ppage and give it a new swap.
-    page_table_entry_t * c = &current_arena->page_table.ptes[4096];
     unordered_set<Virtual_Page*>& associated_pages = 
             ppage_to_owners[page->entry->ppage];
 
@@ -329,6 +328,11 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
         Physical_Page * new_ppage = create_phys_page(write_flag);    
         // remove itself as an owner of the old physical page
         ppage_to_owners[page->entry->ppage].erase(page);
+        // add himself as a n owner of the NEW phyiscal page
+        ppage_to_owners[new_ppage->ppage_location].insert(page);
+        // change the table entry to the new ppage
+        page->entry->ppage = new_ppage->ppage_location;
+
         // remove itself as an owner of the old swap file/set swap to false
         if (page->in_swap)
         {

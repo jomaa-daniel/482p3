@@ -1,4 +1,4 @@
-1. X evicting a ppage has no owners / check propogate swapspace ? 
+1. DONE evicting a ppage has no owners / check propogate swapspace ? 
 3. NS evict a clean page with a correspodingin swap block (Shared/Not)
 4. NS evict a dirty page with no corresponding swap block (Shared/Not)
 5. NS evict a dirty page with a corresponding swap block (Shared/Not)
@@ -16,6 +16,7 @@ that physical page is used for the next vm_fault and not another run of clock ev
 16. copy on write to a page that is about to get evicted
 17. fork then write to the forked pages to fill up memory using copy on write. Then cause an eviction
 18. copy on write two owners that both point to the same swap block
+19. DONE Evict a page that was previously shared
 
 
 
