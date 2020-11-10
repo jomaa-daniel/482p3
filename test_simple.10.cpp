@@ -18,7 +18,7 @@ int main()
     }
     cout << "--------------------\n";
     strcpy(filename, "shakespeare.txt");
-    cout << (int) (filename+100) << '\n';
+    cout << (int) (*(filename+100)) << '\n';
     /* Print the first speech from the file */
     for (char * c = filename; c < filename + 4096; ++c)
     {
