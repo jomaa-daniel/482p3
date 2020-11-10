@@ -9,6 +9,7 @@ test_evict_shared_swap_S.4.cpp
 test_evict_writeback_NS.4.cpp
 test_evict_writeback_S.4.cpp
 test_reclaim_ppage.4.cpp
+test_evict_shared_corrs_swap_S.4.cpp
 test_simple.10.cpp
 utils.cpp
 utils.h

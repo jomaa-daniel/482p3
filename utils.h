@@ -66,9 +66,7 @@ void handle_fault_zero(bool write_flag, Virtual_Page* page);
 
 void write_to_swap(Virtual_Page* page);
 
-
 Physical_Page* create_phys_page(bool write_flag);
-
 
 /////////////////// ASSERT FUNCTIONS //////////////////
 void assert_all();
