@@ -15,6 +15,13 @@ int main()
         now page has a virtual pointer to zero and a virtual pointer to real mem
 
         there is a shared zero page on line 26, copy on write on line 41
+
+        solo belongs to the child. 
+        parent owns its own 'page' when it creates shared.txt. 
+        page1 is created and owned by parent
+        child's solo.txt is evicted with dirty bit to swap on line 50
+        parents page "shared.txt" is evicted by parent's page3 variable
+        
     
      */
     //Shared physical page
@@ -49,20 +56,17 @@ int main()
         /* Allocate swap-backed page from the arena */
         char *page3 = (char *) vm_map(nullptr, 0);
         strcpy(page3, "3.txt");
-        cout << page
+        
 
-        //----------EVICTION MAKE SURE CHILD *page GETS EVICTED----------
+        //----------EVICTION MAKE SURE CHILD *page1 GETS EVICTED----------
 
-        vm_yield();
+
 
     }
     else
     {
-        //child
-        //code
-        /* Allocate swap-backed page from the arena */
-        char *pagec = (char *) vm_map(nullptr, 0);
-        strcpy(pagec, "c.txt");
+       cout << page << '\n';
+       cout << page1 << '\n';
     }
 
 }

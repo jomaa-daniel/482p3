@@ -685,7 +685,6 @@ void assert_all()
     if (DEBUG)
     return;
 
-    auto peen = begin(swap_block_to_owners);
 
     assert(assert_clock_and_pages_sync());
 

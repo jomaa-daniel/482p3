@@ -52,7 +52,8 @@ unsigned int ppage_entry, bool read_enable, bool write_enable, Arena *arena)
 {
     //iterate valid_arena_bound ????
     
-    if (current_arena->valid_arena_bound + VM_PAGESIZE > VM_ARENA_SIZE ||
+    if (current_arena->valid_arena_bound + VM_PAGESIZE > 
+        uintptr_t(VM_ARENA_BASEADDR) + VM_ARENA_SIZE ||
         current_arena->valid_arena_bound < uintptr_t(VM_ARENA_BASEADDR))
     { 
         throw NotEnoughVirtualMemory();
@@ -70,13 +71,14 @@ unsigned int ppage_entry, bool read_enable, bool write_enable, Arena *arena)
     //Check vp_num matches the copied pages vp_num ASSERT
     entry = &arena->page_table.ptes[vp_num];
     
+    //Unnessary?
     entry->ppage = ppage_entry;
     entry->read_enable = read_enable;
     entry->write_enable = write_enable;
 
     //Store in arenas virtual page map
-    arena->virtual_pages[vp_num];
-
+    arena->virtual_pages[vp_num] = this; 
+    
     //Update ppage_to_owner map/ so this virtual page owns the same ppage 
     //assert(ppage_to_owners.find(ppage_entry) == ppage_to_owners.end())
     if(in_clock || ppage_entry == 0){

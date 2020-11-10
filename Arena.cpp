@@ -22,7 +22,7 @@ Arena::Arena(Arena& other)
         c.write_enable = 0;
         //Parent must always copy on write so it must be write disabled
         p.write_enable = 0;
-
+        
         c.ppage = p.ppage;
     }
 
