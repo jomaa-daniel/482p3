@@ -8,7 +8,7 @@ unsigned int current_available_block = 0;
 
 void zero_out_ppage(unsigned int ppage)
 {
-    for(unsigned int i = ppage; i < VM_PAGESIZE; ++i) {
+    for(unsigned int i = ppage * VM_PAGESIZE; i < VM_PAGESIZE; ++i) {
         ((char *)vm_physmem)[i] = 0;
     }
 }
@@ -283,7 +283,7 @@ Physical_Page* create_phys_page(bool write_flag)
     if(!free_ppage)
     {
         free_ppage = find_ppage();
-        zero_out_ppage(free_ppage);
+        // zero_out_ppage(free_ppage);
     }
 
     return add_new_page_to_clock(free_ppage, write_flag);  
@@ -431,6 +431,7 @@ void handle_fault_zero(bool write_flag, Virtual_Page* page)
     assert(ppage_to_owners.find(0) != end(ppage_to_owners));
 
     ppage_to_owners[0].erase(page);
+
 }
 
 
