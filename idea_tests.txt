@@ -1,8 +1,8 @@
 1. DONE evicting a ppage has no owners / check propogate swapspace ? 
 3. DONE NS S evict a clean page with a correspodingin swap block (Shared/Not)
 4. DONE NS S evict a dirty page with no corresponding swap block (Shared/Not)
-5. NS evict a dirty page with a corresponding swap block (Shared/Not)
-6. Deallocate a swap block and fill it with another page 
+5. DONE NS S evict a dirty page with a corresponding swap block (Shared/Not)
+6. Deallocate a swap block and fill it with another page
 7. evcit a phyiscal page with multiple owners
 8. evict a swap block with multiple owners
 9. evict a swap block with one owner
@@ -18,8 +18,14 @@ that physical page is used for the next vm_fault and not another run of clock ev
 18. copy on write two owners that both point to the same swap block
 19. DONE Evict a page that was previously shared
 
-
-
+20. 1 parent 2 children regression? // Make sure children are sharing after parent dies
+    (1 parent forks twice)
+21. Create a chain of forks with work NO done in between // Make sure child2 is sharing with parent and child1
+    (Parent forks child forks)
+    -- note: keep one thing shared accross all forks, copy on write at the end
+    -- have the last owner write - test handle last owner
+21. Create a chain of forks WITH work done in between // Make sure p
+    (do work Parent forks do work in child child forks)
 
 Virtual Page States: Inclock/outclock, Inswap/Outswap, Read/Notread, Write/Notwrite, point0/notpoint0, owns shared/single/no, owns shared/single/no mem  
 Physical Page States: Dirty/Notdirty 
