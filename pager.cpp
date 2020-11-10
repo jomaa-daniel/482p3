@@ -214,6 +214,9 @@ extern void vm_switch(pid_t pid)
  */
 void vm_destroy()
 {
+    // this is a debug flag, tell the assertion that clock will move below the max limit
+    clock_maxed_flag = false;
+
     delete current_arena;
     // when we pop the phys pages from the dequeu remembert to keep in sync with the map
     pid_to_arena.erase(current_running_pid);

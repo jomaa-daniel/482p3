@@ -5,6 +5,10 @@
 
 unsigned int current_available_block = 0;
 
+// assertion flag
+bool clock_maxed_flag = false;
+
+
 
 void zero_out_ppage(unsigned int ppage)
 {
@@ -274,6 +278,9 @@ Physical_Page* create_phys_page(bool write_flag)
     unsigned int free_ppage = 0;
     if (mem_clock.size() + 1 == MAX_PHYSICAL_MEM_SIZE)
     {
+        // raise a flag that the clock is now at the limit
+        clock_maxed_flag = true;
+
         Physical_Page victim = find_victim();
         evict_phys_page(victim);
         free_ppage = victim.ppage_location;
@@ -437,7 +444,6 @@ void handle_fault_zero(bool write_flag, Virtual_Page* page)
 
 
 /////////////////// ASSERT FUNCTIONS //////////////////
-
 
 
 bool assert_clock_and_pages_sync()
@@ -715,6 +721,14 @@ bool assert_arenas_sync(Arena* a1, Arena* a2)
     return true;
 }
 
+bool assert_clock_maintain_size()
+{
+    if (clock_maxed_flag)
+    {
+        return mem_clock.size() + 1 == MAX_PHYSICAL_MEM_SIZE 
+            and ppage_in_clock.size() + 1 == MAX_PHYSICAL_MEM_SIZE;
+    }
+}
 
 void assert_all()
 {
@@ -743,5 +757,9 @@ void assert_all()
     assert(assert_zero_page_correctness());
     
     assert(assert_valid_swap_owners());
+
+    assert(assert_clock_maintain_size());
+    // if we have hit the clock limit (flag) make sure
+    // that clock_size == max_limit
 }
 #endif /* _VM_PAGER_H_ */

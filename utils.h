@@ -69,6 +69,11 @@ void write_to_swap(Virtual_Page* page);
 Physical_Page* create_phys_page(bool write_flag);
 
 /////////////////// ASSERT FUNCTIONS //////////////////
+
+// assert variables:
+
+extern bool clock_maxed_flag;
+
 void assert_all();
 
 // make sure this accounts for the zero page
@@ -97,4 +102,7 @@ bool assert_zero_page_correctness();
 bool assert_valid_swap_owners();
 
 bool assert_arenas_sync(Arena* a1, Arena* a2);
+
+bool assert_clock_maintain_size();
+
 #endif /* _VM_PAGER_H_ */
