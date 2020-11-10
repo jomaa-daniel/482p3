@@ -97,4 +97,6 @@ bool assert_swap_map_correctness();
 bool assert_zero_page_correctness();
 
 bool assert_valid_swap_owners();
+
+bool assert_arenas_sync(Arena* a1, Arena* a2);
 #endif /* _VM_PAGER_H_ */

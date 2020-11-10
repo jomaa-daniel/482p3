@@ -47,7 +47,7 @@ Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false)
 }
 
 Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, 
-unsigned int ppage_entry, bool read_enable, bool write_enable, Arena *arena)
+unsigned int vp_num, Arena *arena)
 : block(block_), in_swap(in_swap_), in_clock(in_clock_) 
 {
     //iterate valid_arena_bound ????
@@ -66,38 +66,22 @@ unsigned int ppage_entry, bool read_enable, bool write_enable, Arena *arena)
     }
     else{
         throw NotEnoughSwapBlocks();
-    }
-    uintptr_t vp_num = get_virtual_page_num((void *) arena->valid_arena_bound);
+    } 
     //Check vp_num matches the copied pages vp_num ASSERT
     entry = &arena->page_table.ptes[vp_num];
-    
-    //Unnessary?
-    entry->ppage = ppage_entry;
-    entry->read_enable = read_enable;
-    entry->write_enable = write_enable;
 
     //Store in arenas virtual page map
     arena->virtual_pages[vp_num] = this; 
     
     //Update ppage_to_owner map/ so this virtual page owns the same ppage 
     //assert(ppage_to_owners.find(ppage_entry) == ppage_to_owners.end())
-    if(in_clock || ppage_entry == 0){
+    if(in_clock || this->entry->ppage == 0){
         //Update ownership of ppage
-        ppage_to_owners[ppage_entry].insert(this);
+        ppage_to_owners[this->entry->ppage].insert(this);
     }
     //Update swap_to_owner map/ so this virtual page owns the same swap 
     if(in_swap)
-    {   
-        //Iterate and check that the swap block is owned by the source virtual page
-        // assert([&]()->bool
-        // {
-        //     for(auto vp : x)
-        //     {
-        //         if (*this == vp) {return true;}
-        //     }
-        //     return false;     
-        // }());
-            
+    {               
         //This swap block must have 1 owner namely the source virtual page
         swap_block_to_owners[block].insert(this);
     }

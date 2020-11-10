@@ -1,5 +1,6 @@
 #include "vm_arena.h"
 #include "Arena.h"
+#include "utils.h"
 
 Arena::Arena()
 {
@@ -24,25 +25,24 @@ Arena::Arena(Arena& other)
         p.write_enable = 0;
         
         c.ppage = p.ppage;
+
+        if (other.virtual_pages.find(i) != end(other.virtual_pages))
+        {
+            // Allocate a new page and increments the address bound in its arena
+            // Updates ownership maps based on source virtual page
+            // Updates which block and ppage it now shares
+            Virtual_Page * valid_page = other.virtual_pages[i];
+            new Virtual_Page(
+                valid_page->block,
+                valid_page->in_swap,
+                valid_page->in_clock,
+                i,
+                this
+            );
+        }
     }
 
-    for (auto & pair : other.virtual_pages)
-    {
-
-        // Allocate a new page and increments the address bound in its arena
-        // Updates ownership maps based on source virtual page
-        // Updates which block and ppage it now shares
-        new Virtual_Page
-        (
-            pair.second->block,
-            pair.second->in_swap,
-            pair.second->in_clock,
-            pair.second->entry->ppage,
-            pair.second->entry->read_enable,
-            pair.second->entry->write_enable,
-            this
-        ); 
-    }
+    assert_arenas_sync(this, &other);
 
 }
 

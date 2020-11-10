@@ -680,6 +680,35 @@ bool assert_valid_swap_owners()
     return true;
 }
 
+bool assert_arenas_sync(Arena* a1, Arena* a2)
+{
+    if (a1->virtual_pages.size() != a2->virtual_pages.size())
+    {
+        return false;
+    }
+
+    if (a1->valid_arena_bound != a2->valid_arena_bound)
+    {
+        return false;
+    }
+
+    // 1: 0x1, 0x2
+    // 2: 0x1
+    for (auto a1_it = a1->virtual_pages.begin(); 
+    a1_it != end(a1->virtual_pages); ++a1_it)
+    {
+        unsigned int entry1 = a1_it->first;
+        if (a2->virtual_pages.find(entry1) == end(a2->virtual_pages))
+        {
+            return false;
+        }
+        if (*(a2->virtual_pages[entry1]) == *(a1_it->second));
+        
+    }
+    return true;
+}
+
+
 void assert_all()
 {
     if (DEBUG)

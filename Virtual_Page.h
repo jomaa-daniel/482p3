@@ -11,8 +11,7 @@ class Virtual_Page
     //Creating fresh page for vm_create
     Virtual_Page();
     Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, 
-    unsigned int ppage_entry, bool read_enable, 
-    bool write_enable, Arena *arena);    
+    unsigned int vp_num, Arena *arena);    
     bool operator==(const Virtual_Page& rhs);
     Virtual_Page& operator=(const Virtual_Page& rhs)
     {

@@ -62,12 +62,13 @@ int vm_create(pid_t parent_pid, pid_t child_pid)
     else
     {
         arena = new Arena(*pid_to_arena[parent_pid]);
+
     }
 
     pid_to_arena[child_pid] = arena;
     
+        
     assert_all();
-
     return 0;
 }
 
