@@ -728,6 +728,7 @@ bool assert_clock_maintain_size()
         return mem_clock.size() + 1 == MAX_PHYSICAL_MEM_SIZE 
             and ppage_in_clock.size() + 1 == MAX_PHYSICAL_MEM_SIZE;
     }
+    return true;
 }
 
 void assert_all()
