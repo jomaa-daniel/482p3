@@ -266,8 +266,6 @@ bool not_valid_addr(uintptr_t addr)
 
 Physical_Page* create_phys_page(bool write_flag)
 {
-    if (DEBUG)
-    cout << "create_phys_page\n";
     //Need to bring you into memory 
     //Check if there are any empty ppages to add to
     //if not evict and do (associated changes in eviction)
@@ -285,6 +283,7 @@ Physical_Page* create_phys_page(bool write_flag)
     if(!free_ppage)
     {
         free_ppage = find_ppage();
+        zero_out_ppage(free_ppage);
     }
 
     return add_new_page_to_clock(free_ppage, write_flag);  
