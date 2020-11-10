@@ -522,7 +522,8 @@ bool assert_swap_block_owners_sync()
         const auto first_vp = *begin(block_owner_pair.second);
 
         for(const auto vp : block_owner_pair.second){
-            if(!(*vp == *(first_vp))){
+            if(!(*vp == *(first_vp)))
+            {
                 return false;
             }
         }
