@@ -105,7 +105,8 @@ void *vm_map(const char *filename, unsigned int block)
 
     //Update ppage_to_owners new virtual page points to the 0 page (shared/probably)
 
-    
+    assert_all();
+
     try
     {
         new Virtual_Page();

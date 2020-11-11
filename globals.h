@@ -32,11 +32,11 @@ struct Physical_Page
     Physical_Page& operator=(const Physical_Page& rhs)
     {
         this->dirty = 1;
-        
+        int base_lhs = this->ppage_location * VM_PAGESIZE;
+        int base_rhs = rhs.ppage_location * VM_PAGESIZE;
         for (unsigned int i = 0; i < VM_PAGESIZE; ++i)
         {
-            ((char *)vm_physmem)[this->ppage_location + i] 
-            = ((char *)vm_physmem)[rhs.ppage_location + i];
+            ((char *)vm_physmem)[i + base_lhs] = ((char *)vm_physmem)[base_rhs + i];
         }
 
         return *this;

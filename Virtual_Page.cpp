@@ -30,8 +30,10 @@ Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false)
     entry->read_enable = 1;
     entry->write_enable = 0;
 
-    //Store in arenas virtual page map
-    current_arena->virtual_pages[vp_num] = this;
+    //Store in arenas virtual page map 
+    //Protection against overrides
+    assert(current_arena->virtual_pages.find(vp_num) == end(current_arena->virtual_pages));
+    current_arena->virtual_pages[vp_num] = this; // i think the issue is right here
 
     //Update ppage_to_owner map/ so this virtual page owns 0 page
     if(ppage_to_owners.find(0) == ppage_to_owners.end())
@@ -52,9 +54,9 @@ unsigned int vp_num, Arena *arena)
 {
     //iterate valid_arena_bound ????
     
-    if (current_arena->valid_arena_bound + VM_PAGESIZE > 
+    if (arena->valid_arena_bound + VM_PAGESIZE > 
         uintptr_t(VM_ARENA_BASEADDR) + VM_ARENA_SIZE ||
-        current_arena->valid_arena_bound < uintptr_t(VM_ARENA_BASEADDR))
+        arena->valid_arena_bound < uintptr_t(VM_ARENA_BASEADDR))
     { 
         throw NotEnoughVirtualMemory();
     }
@@ -71,6 +73,8 @@ unsigned int vp_num, Arena *arena)
     entry = &arena->page_table.ptes[vp_num];
 
     //Store in arenas virtual page map
+    //Protection against overrides
+    assert(arena->virtual_pages.find(vp_num) == end(arena->virtual_pages));
     arena->virtual_pages[vp_num] = this; 
     
     //Update ppage_to_owner map/ so this virtual page owns the same ppage 
@@ -87,9 +91,7 @@ unsigned int vp_num, Arena *arena)
     }
         
     //Iterate arena bound for next page
-    current_arena->valid_arena_bound = 
-        current_arena->valid_arena_bound + VM_PAGESIZE;
-    
+    arena->valid_arena_bound = arena->valid_arena_bound + VM_PAGESIZE;
 } 
 bool Virtual_Page::operator==(const Virtual_Page &rhs){
 
@@ -127,7 +129,7 @@ Virtual_Page::~Virtual_Page()
             if(swap_block_to_owners[this->block].empty()){
                 swap_block_to_owners.erase(this->block);
             }
-        }
+    }
         
         
     if(this->in_clock or this->entry->ppage == 0)
@@ -154,12 +156,22 @@ Virtual_Page::~Virtual_Page()
                         break;
                     }              
                 } 
+
+                // handle last owner 
             }
-            //Remove this virtual page as an owner of this swap block
+            //Remove this virtual page as an owner of this ppage
+            assert(ppage_to_owners[this->entry->ppage].find(this) != 
+                end(ppage_to_owners[this->entry->ppage]));
+
             ppage_to_owners[this->entry->ppage].erase(this);
+            
+            assert(ppage_in_clock.find(this->entry->ppage) != end(ppage_in_clock));
+            //Checks if there is 1 more owner and gives him write permission
+            handle_last_owner(ppage_in_clock[this->entry->ppage]);
 
             // if there is no more owners, then remove the empty set
-            if (ppage_to_owners[this->entry->ppage].empty())
+            if (ppage_to_owners[this->entry->ppage].empty() and 
+                this->entry->ppage != 0)
             {
                 ppage_to_owners.erase(this->entry->ppage);
             }

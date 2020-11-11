@@ -339,7 +339,9 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
         ppage_to_owners[new_ppage->ppage_location].insert(page);
         // change the table entry to the new ppage
         page->entry->ppage = new_ppage->ppage_location;
-
+        // change the write enable
+        page->entry->write_enable = 1;
+        
         // remove itself as an owner of the old swap file/set swap to false
         if (page->in_swap)
         {
@@ -396,23 +398,51 @@ void handle_fault_swap(bool write_flag, Virtual_Page* page)
     // adds to clock
     Physical_Page* new_phys_page = create_phys_page(write_flag);
 
-    // TODO propigate moving the swap file from swap to phys
+    // if write and multiple owners: 
+    //remove as parent of existing swap block
+    //Remove the swap block;
+    //Change in swap:false
+    //Change in clock: true
+    //Set new physpage location
+    //Set new ppage_to_owners;
+    //Set read: 1, write:1 
     unordered_set<Virtual_Page*> &owners = swap_block_to_owners[page->block];
 
-    for (auto virtual_page : owners)
+    
+    if (write_flag and owners.size() > 1)
     {
-        // each virtual page needs to be aware that it has a swap block
-        //  despite already being in swap_block_to_owners
-        assert(virtual_page->in_swap);
-
-        virtual_page->in_clock = true;
-        virtual_page->entry->ppage = new_phys_page->ppage_location; // TODO is this right??
-        virtual_page->entry->read_enable = 1;
-        virtual_page->entry->write_enable = write_flag;
-        // ppage_to_owners[page->entry->ppage].insert(virtual_page); // TODO is this right?
+        owners.erase(page);
+        //Page we just made should have no owners
+        assert(ppage_to_owners.find(new_phys_page->ppage_location) == end(ppage_to_owners));
+        // since this is the first vpage on this ppage we should create a new unordered set
+        ppage_to_owners[new_phys_page->ppage_location] = unordered_set<Virtual_Page*>();
+        ppage_to_owners[new_phys_page->ppage_location].insert(page);
+        page->in_swap = false;
+        page->in_clock = true;
+        page->entry->ppage = new_phys_page->ppage_location;
+        page->entry->read_enable = 1;
+        page->entry->write_enable = 1;
     }
+    else
+    {
+        for (auto virtual_page : owners)
+        {
+            // each virtual page needs to be aware that it has a swap block
+            //  despite already being in swap_block_to_owners
+            assert(virtual_page->in_swap);
+            //If we are trying
+            
+            virtual_page->in_clock = true;
+            virtual_page->entry->ppage = new_phys_page->ppage_location; // TODO is this right??
+            virtual_page->entry->read_enable = 1;
+            virtual_page->entry->write_enable = write_flag;
+            // ppage_to_owners[page->entry->ppage].insert(virtual_page); // TODO is this right?
+        }
+        ppage_to_owners[new_phys_page->ppage_location] = owners;
+    }
+    // TODO propigate moving the swap file from swap to phys
 
-    ppage_to_owners[new_phys_page->ppage_location] = owners;
+
     file_read(nullptr, page->block, (void *) (uintptr_t(vm_physmem) + (VM_PAGESIZE * page->entry->ppage)));
 }
 
@@ -444,12 +474,11 @@ void handle_fault_zero(bool write_flag, Virtual_Page* page)
 
 
 /////////////////// ASSERT FUNCTIONS //////////////////
-
-
 bool assert_clock_and_pages_sync()
 {
     // count the number of pages in the arena that say they are in clock
     int virtual_page_count = 0;
+
 
     for (const auto& arena : pid_to_arena)
     {
@@ -523,11 +552,6 @@ bool assert_ppage_owners_sync()
 
 bool assert_swap_block_owners_sync()
 {
-    if (swap_block_to_owners.size() == 1024)
-    {
-        int a = 1;
-        
-    }
     for(const auto& block_owner_pair : swap_block_to_owners){
         const auto first_vp = *begin(block_owner_pair.second);
 
@@ -735,6 +759,36 @@ bool assert_clock_maintain_size()
     return true;
 }
 
+bool assert_correct_write_flag()
+{
+    for (const auto& arena : pid_to_arena)
+    {
+        for (const auto virtual_page : arena.second->virtual_pages)
+        {
+            if (virtual_page.second->in_clock)
+            {
+                if (ppage_in_clock.find(virtual_page.second->entry->ppage) == end(ppage_in_clock))
+                {
+                    return false;
+                }
+                if (ppage_to_owners.find(virtual_page.second->entry->ppage) == end(ppage_to_owners))
+                {
+                    return false;
+                }
+                if (virtual_page.second->entry->read_enable == 1 and
+                    ppage_in_clock[virtual_page.second->entry->ppage]->dirty == 1 and 
+                    virtual_page.second->entry->write_enable == 0 and
+                    ppage_to_owners[virtual_page.second->entry->ppage].size() == 1)
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+
 void assert_all()
 {
     if (DEBUG)
@@ -766,5 +820,7 @@ void assert_all()
     assert(assert_clock_maintain_size());
     // if we have hit the clock limit (flag) make sure
     // that clock_size == max_limit
+
+    assert(assert_correct_write_flag());
 }
 #endif /* _VM_PAGER_H_ */

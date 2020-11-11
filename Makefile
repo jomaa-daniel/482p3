@@ -14,7 +14,7 @@ pager: ${PAGER_OBJS} libvm_pager_core.o
 	${CC} -o $@ $^
 
 # Compile an application program
-app: test_fault_on_swap.4.cpp libvm_app_core.o
+app: test_fork_chain_no_work.4.cpp libvm_app_core.o
 	${CC} -o $@ $^ -ldl
 
 # Generic rules for compiling a source file to an object file

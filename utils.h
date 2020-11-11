@@ -105,4 +105,6 @@ bool assert_arenas_sync(Arena* a1, Arena* a2);
 
 bool assert_clock_maintain_size();
 
+bool assert_correct_write_flag();
+
 #endif /* _VM_PAGER_H_ */

@@ -2,20 +2,20 @@
 3. DONE NS S evict a clean page with a correspodingin swap block (Shared/Not)
 4. DONE NS S evict a dirty page with no corresponding swap block (Shared/Not)
 5. DONE NS S evict a dirty page with a corresponding swap block (Shared/Not)
-6. Deallocate a swap block and fill it with another page
-7. evcit a phyiscal page with multiple owners
-8. evict a swap block with multiple owners
-9. evict a swap block with one owner
-10. max out the swap file
-11. max out the virtual space
+6. DONE Deallocate a swap block and fill it with another page
+7. DONE evcit a phyiscal page with multiple owners <- double check
+8. evict a swap block with multiple owners <- TODO
+9. DONE evict a swap block with one owner
+10. DONE max out the swap file
+11. max out the virtual space // not possible?
 12. Delete a virtual page that doesnt share a physical page and make sure
-that physical page is used for the next vm_fault and not another run of clock eviction algorithm 
-13. vm_fault on an invalid page (out of bounds)
-14. vm_fault on a page that is old(not referenced) and dirty/write enabled
-15. fork a dirty phyiscal page then try to write to it with a child processs
-16. copy on write to a page that is about to get evicted
-17. fork then write to the forked pages to fill up memory using copy on write. Then cause an eviction
-18. copy on write two owners that both point to the same swap block
+that physical page is used for the next vm_fault and not another run of clock eviction algorithm <-- TODO Just in case 
+13. vm_fault on an invalid page (out of bounds) <-- TODO
+14. vm_fault on a page that is old(not referenced) and dirty/write enabled <--- TODO
+15. DONE fork a dirty phyiscal page then try to write to it with a child processs 
+16. copy on write to a page that is about to get evicted <-- TODO
+17. DONE fork then write to the forked pages to fill up memory using copy on write. Then cause an eviction 
+18. DONE copy on write two owners that both point to the same swap block (NOT IN CLOCK)
 19. DONE Evict a page that was previously shared
 
 20. 1 parent 2 children regression? // Make sure children are sharing after parent dies
@@ -26,6 +26,8 @@ that physical page is used for the next vm_fault and not another run of clock ev
     -- have the last owner write - test handle last owner
 21. Create a chain of forks WITH work done in between // Make sure p
     (do work Parent forks do work in child child forks)
+
+22. write on a last owner, make sure that there is no fault
 
 Virtual Page States: Inclock/outclock, Inswap/Outswap, Read/Notread, Write/Notwrite, point0/notpoint0, owns shared/single/no, owns shared/single/no mem  
 Physical Page States: Dirty/Notdirty 

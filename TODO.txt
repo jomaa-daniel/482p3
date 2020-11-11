@@ -7,14 +7,10 @@
 4. refactor the create new physical page s.t. it does not rely on a new swap block
     being created
 
+questions:
 
+If a new owner points to a physical page, is that physical page now Read only to all of its owners
 
-ASK CHEN ABOUT WHY OUR TEST PAUSES THE TERMINAL
-test_evict_clean_dirty_S.4.cpp
-ISSUE WITH CHILD HANGING??
-MAYBE WE DONT CALL EXIT CORRECTLY?
+As soon as we start sharing we should turn off write_enable? We think so
 
-
-
-
-
+HANDLE LAST OWNER ON NOT REFERENCED OR OLD ON CLOCK

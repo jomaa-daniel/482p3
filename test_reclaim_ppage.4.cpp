@@ -23,6 +23,7 @@ int main()
         /* Allocate swap-backed page from the arena */
          char *page3 = (char *) vm_map(nullptr, 0);
          strcpy(page3, "3.txt");
+         vm_yield();
     }
     else
     {

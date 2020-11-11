@@ -13,7 +13,8 @@ Arena::Arena()
 
 Arena::Arena(Arena& other)
 { 
-
+    this->valid_arena_bound = other.valid_arena_bound;
+    
     for (unsigned int i = 0; i < VM_ARENA_SIZE/VM_PAGESIZE; ++i)
     {
         page_table_entry_t & p = other.page_table.ptes[i];
@@ -25,7 +26,7 @@ Arena::Arena(Arena& other)
         p.write_enable = 0;
         
         c.ppage = p.ppage;
-
+        auto a = vm_physmem;
         if (other.virtual_pages.find(i) != end(other.virtual_pages))
         {
             // Allocate a new page and increments the address bound in its arena
