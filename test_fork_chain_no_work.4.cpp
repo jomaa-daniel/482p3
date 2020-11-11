@@ -50,7 +50,6 @@ int main()
             cout << zero << "\n";
         }
         
-        
     }
 
 }

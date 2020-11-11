@@ -6,7 +6,7 @@ PAGER_SOURCES=pager.cpp Arena.cpp Virtual_Page.cpp utils.cpp
 # Generate the names of the pager's object files
 PAGER_OBJS=${PAGER_SOURCES:.cpp=.o}
 
-all: pager app
+all: pager test_fault_on_swap
 
 # Compile the pager and tag this compilation
 pager: ${PAGER_OBJS} libvm_pager_core.o
@@ -14,7 +14,7 @@ pager: ${PAGER_OBJS} libvm_pager_core.o
 	${CC} -o $@ $^
 
 # Compile an application program
-app: test_fork_chain_no_work.4.cpp libvm_app_core.o
+test_fault_on_swap: test_fault_on_swap.4.cpp libvm_app_core.o
 	${CC} -o $@ $^ -ldl
 
 # Generic rules for compiling a source file to an object file
@@ -24,4 +24,4 @@ app: test_fork_chain_no_work.4.cpp libvm_app_core.o
 	${CC} -c $<
 
 clean:
-	rm -f ${PAGER_OBJS} pager app
+	rm -f ${PAGER_OBJS} pager 

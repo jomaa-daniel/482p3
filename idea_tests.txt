@@ -18,16 +18,16 @@ that physical page is used for the next vm_fault and not another run of clock ev
 18. DONE copy on write two owners that both point to the same swap block (NOT IN CLOCK)
 19. DONE Evict a page that was previously shared
 
-20. 1 parent 2 children regression? // Make sure children are sharing after parent dies
+20.  1 parent 2 children regression? // Make sure children are sharing after parent dies
     (1 parent forks twice)
-21. Create a chain of forks with work NO done in between // Make sure child2 is sharing with parent and child1
+21. DONE Create a chain of forks with work NO done in between // Make sure child2 is sharing with parent and child1
     (Parent forks child forks)
     -- note: keep one thing shared accross all forks, copy on write at the end
     -- have the last owner write - test handle last owner
-21. Create a chain of forks WITH work done in between // Make sure p
+21. DONE Create a chain of forks WITH work done in between // Make sure p
     (do work Parent forks do work in child child forks)
 
-22. write on a last owner, make sure that there is no fault
+22. DONE write on a last owner, make sure that there is no fault
 
 Virtual Page States: Inclock/outclock, Inswap/Outswap, Read/Notread, Write/Notwrite, point0/notpoint0, owns shared/single/no, owns shared/single/no mem  
 Physical Page States: Dirty/Notdirty 

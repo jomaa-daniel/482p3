@@ -25,6 +25,7 @@ struct NotEnoughSwapBlocks : public std::exception
     }
 };
 
+void handle_last_owner(Physical_Page& old_phys_page);
 
 void zero_out_ppage(unsigned int ppage);
 
@@ -49,6 +50,7 @@ Physical_Page* add_new_page_to_clock(unsigned int ppage_location, bool write_fla
 //  they might have been dealloc while still having v_pages pointing to phys pages
 // in the clock
 void evict_phys_page(Physical_Page& page);
+
 
 void propigate_referenced(bool write_flag, Virtual_Page* page);
 

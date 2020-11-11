@@ -104,7 +104,6 @@ void *vm_map(const char *filename, unsigned int block)
     //check if filename is nullptr/ if true new page must point to 0 page.
 
     //Update ppage_to_owners new virtual page points to the 0 page (shared/probably)
-
     assert_all();
 
     try

@@ -26,7 +26,7 @@ Arena::Arena(Arena& other)
         p.write_enable = 0;
         
         c.ppage = p.ppage;
-        auto a = vm_physmem;
+
         if (other.virtual_pages.find(i) != end(other.virtual_pages))
         {
             // Allocate a new page and increments the address bound in its arena

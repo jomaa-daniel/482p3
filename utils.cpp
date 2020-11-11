@@ -236,7 +236,6 @@ Physical_Page* add_new_page_to_clock(unsigned int ppage_location,
     return new_page;
 }
 
-
 bool assert_not_owner(Virtual_Page* page)
 {
     for (auto& page_sets : ppage_to_owners)

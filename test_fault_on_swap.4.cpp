@@ -61,9 +61,9 @@ int main()
             }
             else
             {
-                // cout << "kill the swap \n";
-                // char *page = (char *) vm_map(nullptr, 0);
-                // strcpy(page, "c.txt");
+                cout << "kill the swap \n";
+                char *page = (char *) vm_map(nullptr, 0);
+                strcpy(page, "c.txt");
                 
             }   
         }

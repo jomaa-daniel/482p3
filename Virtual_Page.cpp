@@ -114,7 +114,7 @@ Virtual_Page::~Virtual_Page()
     //Since we allocate swap blocks for every virtual page, we need to reclaim 
     // on the way out
     ++available_swap_blocks;
-    
+
     if(this->in_swap){
             //Check this block is owned by someone
             assert(swap_block_to_owners.find(this->block) != swap_block_to_owners.end());
@@ -130,8 +130,7 @@ Virtual_Page::~Virtual_Page()
                 swap_block_to_owners.erase(this->block);
             }
     }
-        
-        
+       
     if(this->in_clock or this->entry->ppage == 0)
     {
         // this == 0x7ffffffeda20
@@ -145,7 +144,9 @@ Virtual_Page::~Virtual_Page()
             assert(*(ppage_to_owners[this->entry->ppage].find(this)) == this);
 
 
+            
             //Dont evict a page just replace this one on next vm_fault
+            //Only run if you are the last person pointing to this physical page
             if(ppage_to_owners[this->entry->ppage].size() == 1 
             and this->entry->ppage != 0)
             {
@@ -156,18 +157,23 @@ Virtual_Page::~Virtual_Page()
                         break;
                     }              
                 } 
-
-                // handle last owner 
             }
+            
             //Remove this virtual page as an owner of this ppage
             assert(ppage_to_owners[this->entry->ppage].find(this) != 
                 end(ppage_to_owners[this->entry->ppage]));
 
             ppage_to_owners[this->entry->ppage].erase(this);
             
-            assert(ppage_in_clock.find(this->entry->ppage) != end(ppage_in_clock));
-            //Checks if there is 1 more owner and gives him write permission
-            handle_last_owner(ppage_in_clock[this->entry->ppage]);
+            //Only runs if there is 1 vp after you delete yourself
+            if(ppage_to_owners[this->entry->ppage].size() == 1 
+            and this->entry->ppage != 0)
+            {
+                assert(ppage_in_clock.find(this->entry->ppage) != end(ppage_in_clock));
+                
+                //Checks if there is 1 more owner and gives him write permission
+                handle_last_owner(*ppage_in_clock[this->entry->ppage]);
+            }
 
             // if there is no more owners, then remove the empty set
             if (ppage_to_owners[this->entry->ppage].empty() and 
