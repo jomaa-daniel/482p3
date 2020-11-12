@@ -17,7 +17,7 @@ test_cases = ["test_copy_on_write_last_owner", "test_copy_on_write_shared_swap",
 "test_double_child_sharing", "test_evict_clean_dirty_S",
 "test_evict_nowriteback_NS", "test_evict_shared_corrs_swap_S", "test_evict_shared_swap_S", "test_evict_writeback_NS",
   "test_fork_chain_no_work",  "test_reclaim_ppage", "test_reuse_ppage_NS", "test_evict_writeback_S",
- "test_simple", "test_simplified_fork", "test_chain_fork_shared_write", "test_copy_on_write_evict", "test_chain_forks_last_owners"]
+ "test_simple", "test_simplified_fork", "test_chain_fork_shared_write", "test_copy_on_write_evict", "test_chain_forks_last_owners", "test_evict_clean_write"]
  
  #"test_max_swap_blocks_NS "test_fault_on_swap", NOT TESTED DUE TO SIZE
 
