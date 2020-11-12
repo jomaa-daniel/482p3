@@ -1,0 +1,55 @@
+in vm_map:
+
+unordered_map<string, unordered_map<int, phy*>>
+filename : {blocks->phys_page}
+
+filename : set{VPage}
+
+NEW ASSERTIONS
+
+loop thru all v_pages: if filename.size() != 0 then in_swap == 0
+
+upon creating a new virtual page:
+    {filename : phys_page}
+    check to see if the 
+    
+    point the virtual page to the block specified
+    in_swap is false->assertfalse
+    in clock is true->false
+    bring block into phys mem->stays same
+    add virtual page and phys page to ppage_to_owners -> take out from ppage owners
+    std::string filename: "filename"
+    
+    //Make sure on clock reference we always change r/w = 0 -> r/w = 1 for both
+
+    read/write = 1 |  0/0 r =1 w = 1 -> 0
+    dirty = 0
+
+
+vm_fault: (addr, block)
+    check to see if th
+
+
+file_name_to_block_to_owner; {filename:{1:*vp}}
+
+vm_create():
+
+if the virutal page is a filebacked page -> add to the filename_to_owners
+add the filename copy
+
+
+vp{block :1 ,in_swap} 
+
+Research this
+assert(){
+    if in file_block_owners;
+    your in_swap must be false!!!
+}
+
+
+~Virtual_Page(){
+    if you are the last ppage owner of a file backed page
+    When you destroy a file-backed page
+    Make sure you write back to the file block so the data isnt lost
+    deallocate yourselfg as an owner;
+}

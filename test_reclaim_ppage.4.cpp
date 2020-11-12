@@ -31,6 +31,7 @@ int main()
         //code
         /* Allocate swap-backed page from the arena */
         char *pagec = (char *) vm_map(nullptr, 0);
+        cout << pagec << "\n";
         strcpy(pagec, "c.txt");
     }
 

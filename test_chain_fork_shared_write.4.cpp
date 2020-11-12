@@ -36,6 +36,7 @@ int main()
             vm_yield();
          }
          else{
+             vm_yield();
             //Child 2
             // Only fault for 0
              cout <<"Child 2 is running\n";
@@ -43,9 +44,8 @@ int main()
             strcpy(zero, "Child 2 changed zero.txt");
              cout << page<< '\n';
              cout << zero<< '\n';
-             return 0;
-            }
-         vm_yield();
+             
+         }
     }
     else
     {

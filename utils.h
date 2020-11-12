@@ -109,4 +109,7 @@ bool assert_clock_maintain_size();
 
 bool assert_correct_write_flag();
 
+bool assert_filenames_exist()
+
+
 #endif /* _VM_PAGER_H_ */

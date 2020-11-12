@@ -46,10 +46,10 @@ void handle_last_owner(Physical_Page& old_phys_page)
     if (ppage_to_owners[old_phys_page.ppage_location].size() == 1)
     {
         Virtual_Page* last_owner = *begin(ppage_to_owners[old_phys_page.ppage_location]);
-        // dont want to accidentally make it life when it is not referenced
-        if (last_owner->entry->read_enable == 1)
+        // dont want to accidentally make it life when it is not referenced ONLY IF SWAP BACKED
+        if (last_owner->entry->read_enable == 1 and last_owner->filename != DEFAULT_STRING)
         {
-        // this if there is one owner they should not fault on a write
+            // this if there is one owner they should not fault on a write
             last_owner->entry->write_enable = old_phys_page.dirty;
         }
         
@@ -290,6 +290,7 @@ Physical_Page* create_phys_page(bool write_flag)
     if(!free_ppage)
     {
         free_ppage = find_ppage();
+        //Make sure we dont zero out ppage since 
         // zero_out_ppage(free_ppage);
     }
 
@@ -340,6 +341,13 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
         page->entry->ppage = new_ppage->ppage_location;
         // change the write enable
         page->entry->write_enable = 1;
+        //Change the read enable in case we evicted the copy on right
+        page->entry->read_enable = 1;
+        // add page to the clock
+        page->in_clock = 1;
+
+
+        assert(page->entry->read_enable);
         
         // remove itself as an owner of the old swap file/set swap to false
         if (page->in_swap)
@@ -788,6 +796,16 @@ bool assert_correct_write_flag()
 }
 
 
+bool assert_filenames_exist()
+{
+    
+}
+
+bool assert_flag_correctness()
+{
+    
+}
+
 void assert_all()
 {
     if (DEBUG)
@@ -821,5 +839,11 @@ void assert_all()
     // that clock_size == max_limit
 
     assert(assert_correct_write_flag());
+    
+    //Assert if filename is default_string you can only be r:1w:1 or r:0w:0
+    //or if swap back you are not r:0w:1
+
+    // assert that you are not in_swap
+    // assert that if you are file backed that your file exsists in the filename_to_owners (full regression)
 }
 #endif /* _VM_PAGER_H_ */

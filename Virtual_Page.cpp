@@ -2,57 +2,10 @@
 #include "globals.h"
 #include "utils.h"
 
-Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false) 
+
+
+void check_virtual_page_bound(Arena* arena)
 {
-    //iterate valid_arena_bound // TODO this does not look right, 
-    if (current_arena->valid_arena_bound + VM_PAGESIZE > 
-        uintptr_t(VM_ARENA_BASEADDR) + VM_ARENA_SIZE ||
-        current_arena->valid_arena_bound < uintptr_t(VM_ARENA_BASEADDR))
-    { 
-        throw NotEnoughVirtualMemory();
-    }
-    //Eager Swap reservation (Make sure virtual page has enough space in swap file)
-    if(available_swap_blocks > 0)
-    {
-        //Iterate swap space
-        --available_swap_blocks;
-    }
-    else{
-        throw NotEnoughSwapBlocks();
-    }
-    uintptr_t vp_num = get_virtual_page_num((void *) current_arena->valid_arena_bound);
-        //uintptr_t vp_num =  current_arena->valid_arena_bound - VM_ARENA_BASEADDR;
-
-    entry = &current_arena->page_table.ptes[vp_num];
-    
-    //Make sure to set entry to be appropriate for ppage 0.
-    entry->ppage = 0;
-    entry->read_enable = 1;
-    entry->write_enable = 0;
-
-    //Store in arenas virtual page map 
-    //Protection against overrides
-    assert(current_arena->virtual_pages.find(vp_num) == end(current_arena->virtual_pages));
-    current_arena->virtual_pages[vp_num] = this; // i think the issue is right here
-
-    //Update ppage_to_owner map/ so this virtual page owns 0 page
-    if(ppage_to_owners.find(0) == ppage_to_owners.end())
-    {
-        ppage_to_owners[0] = std::unordered_set<Virtual_Page*>();
-    }
-
-    ppage_to_owners[0].insert(this);
-
-    //Iterate arena bound for next page
-    current_arena->valid_arena_bound = 
-        current_arena->valid_arena_bound + VM_PAGESIZE;
-}
-
-Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, 
-unsigned int vp_num, Arena *arena)
-: block(block_), in_swap(in_swap_), in_clock(in_clock_) 
-{
-    //iterate valid_arena_bound ????
     
     if (arena->valid_arena_bound + VM_PAGESIZE > 
         uintptr_t(VM_ARENA_BASEADDR) + VM_ARENA_SIZE ||
@@ -69,6 +22,90 @@ unsigned int vp_num, Arena *arena)
     else{
         throw NotEnoughSwapBlocks();
     } 
+}
+
+//Default constructor for a 0 page.
+Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false), filename(DEFAULT_STRING) 
+{
+    check_virtual_page_bound(current_arena);
+
+    uintptr_t vp_num = get_virtual_page_num((void *) current_arena->valid_arena_bound);
+        
+
+    entry = &current_arena->page_table.ptes[vp_num];
+
+ 
+    //else:
+    //Make sure to set entry to be appropriate for ppage 0.
+    entry->ppage = 0;
+    entry->read_enable = 1;
+    entry->write_enable = 0;
+
+    //Store in arenas virtual page map 
+    //Protection against overrides
+    assert(current_arena->virtual_pages.find(vp_num) == end(current_arena->virtual_pages));
+    current_arena->virtual_pages[vp_num] = this; // i think the issue is right here
+
+    //Update ppage_to_owner map/ so this virtual page owns 0 page
+    if(ppage_to_owners.find(entry->ppage) == ppage_to_owners.end())
+    {
+        ppage_to_owners[entry->ppage] = std::unordered_set<Virtual_Page*>();
+    }
+
+    ppage_to_owners[entry->ppage].insert(this);
+
+    //Iterate arena bound for next page
+    current_arena->valid_arena_bound = 
+        current_arena->valid_arena_bound + VM_PAGESIZE;
+}
+
+Virtual_Page::Virtual_Page(char *filename_, unsigned int file_block_) : filename(filename_), block(file_block_) 
+{
+    check_virtual_page_bound(current_arena);
+    uintptr_t vp_num = get_virtual_page_num((void *) current_arena->valid_arena_bound);
+
+    entry = &current_arena->page_table.ptes[vp_num];
+
+    // create a new physical page
+    Physical_Page * new_page = create_phys_page(true);
+    
+    //Make sure to set entry to be appropriate for ppage 0.
+    entry->ppage = new_page->ppage_location;
+    entry->read_enable = 1;
+    entry->write_enable = 1;
+    
+    this->in_clock = true;
+
+    assert(current_arena->virtual_pages.find(vp_num) == end(current_arena->virtual_pages));
+    current_arena->virtual_pages[vp_num] = this;
+
+    //Update ppage_to_owner map/ so this virtual page owns 0 page
+    if(ppage_to_owners.find(entry->ppage) == ppage_to_owners.end())
+    {
+        ppage_to_owners[entry->ppage] = std::unordered_set<Virtual_Page*>();
+    }
+
+    ppage_to_owners[entry->ppage].insert(this);
+
+    // update the file to owner such that this virutal page is a new owner of the file
+    if (filename_to_owners.find(filename) == end(filename_to_owners))
+    {
+        filename_to_owners[filename] = std::unordered_set<Virtual_Page*>();
+    }
+    
+    filename_to_owners[filename].insert(this);
+
+    //Finally preform read so that memory actually exists in vm_phys_mem
+    file_read(filename.data(), block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * entry->ppage)));
+
+}
+
+Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, 
+unsigned int vp_num, Arena *arena, std::string& otherfilename)
+: block(block_), in_swap(in_swap_), in_clock(in_clock_) 
+{
+    check_virtual_page_bound(arena);
+
     //Check vp_num matches the copied pages vp_num ASSERT
     entry = &arena->page_table.ptes[vp_num];
 
@@ -111,11 +148,47 @@ bool Virtual_Page::operator==(const Virtual_Page &rhs){
 
 Virtual_Page::~Virtual_Page()
 {
-    //Since we allocate swap blocks for every virtual page, we need to reclaim 
-    // on the way out
-    ++available_swap_blocks;
+    
 
-    if(this->in_swap){
+    // TODO NOTE: FILEBACKED PAGES
+    // IF I AM THE LAST OWNER OF THE FILENAME, // WRITE TO THE FILE IF DIRTY AND THEN ERASE THE FILENAME FROM THE MAP
+
+    // assert filename is in owner???
+    if (this->filename != DEFAULT_STRING)
+    {
+        assert(filename_to_owners.find(this->filename) != end(filename_to_owners));
+    }
+
+    /*
+        if i am file backed i need to:
+            remove myself as owner of a filename
+            remove the filename 
+    */
+    if (!this->filename.empty() and filename_to_owners.find(this->filename) != end(filename_to_owners)) // im filebacked
+    {
+        
+        filename_to_owners[this->filename].erase(this);
+
+        if (filename_to_owners[this->filename].empty())
+        {
+            filename_to_owners.erase(this->filename);
+            
+            //If you own physical memory and you are dirty you must write it back
+            if(this->in_clock and ppage_in_clock[this->entry->ppage]->dirty == true)
+            {
+                file_write(this->filename.data(), this->block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * this->entry->ppage)));
+            }
+        }
+    }
+    else
+    {
+        //Since we allocate swap blocks for every virtual page, we need to reclaim 
+        // on the way out
+        ++available_swap_blocks;
+    }
+
+    if(this->in_swap)
+    {
             //Check this block is owned by someone
             assert(swap_block_to_owners.find(this->block) != swap_block_to_owners.end());
             //Check this block is owned by this virtual page

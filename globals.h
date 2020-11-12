@@ -10,6 +10,7 @@
 #include <cassert>
 #include "Virtual_Page.h"
 #include "Arena.h"
+#include <string>
 
 using namespace std;
 
@@ -53,6 +54,7 @@ extern Arena* current_arena;
 extern std::unordered_map<pid_t, Arena*> pid_to_arena;
 extern std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> swap_block_to_owners;
 extern std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> ppage_to_owners;
+extern std::unordered_map<std::string, std::unordered_set<Virtual_Page*>> filename_to_owners;
 
 extern unsigned int available_swap_blocks;
 extern unsigned int current_available_block;

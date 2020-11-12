@@ -19,6 +19,7 @@ test_copy_on_write_last_owner.4.cpp
 test_fork_chain_no_work.4.cpp
 test_simplified_fork.4.cpp
 test_reuse_ppage_NS.4.cpp
+test_chain_fork_shared_write.4.cpp
 utils.cpp
 utils.h
 

@@ -31,3 +31,10 @@ that physical page is used for the next vm_fault and not another run of clock ev
 
 Virtual Page States: Inclock/outclock, Inswap/Outswap, Read/Notread, Write/Notwrite, point0/notpoint0, owns shared/single/no, owns shared/single/no mem  
 Physical Page States: Dirty/Notdirty 
+
+
+--------------------fileback tests--------------------
+
+
+1. Get a *filename evict it from physmem and try to use it in vm_map
+2. Get a *filename make it old in clock and try to use it in vm_map
