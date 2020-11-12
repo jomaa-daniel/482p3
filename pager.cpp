@@ -1,6 +1,7 @@
 #include "vm_pager.h"
 #include "globals.h"
 #include "utils.h"
+#include <string.h>
 
 
 std::deque<Physical_Page*> mem_clock;
@@ -107,11 +108,28 @@ void *vm_map(const char *filename, unsigned int block)
     //check if filename is nullptr/ if true new page must point to 0 page.
 
     //Update ppage_to_owners new virtual page points to the 0 page (shared/probably)
-    assert_all();
+    //assert_all();
 
     try
     {
-        new Virtual_Page();
+        if (filename == nullptr)
+        {
+            new Virtual_Page();
+        }
+        else
+        {
+            // TODO explore what happens when one string is real
+            // if ()
+            // unsigned int str_len = strlen(filename);
+            // if (str_len + uintptr_t(current_arena->valid_arena_bound) > 
+            //     uintptr_t(VM_ARENA_BASEADDR) + VM_ARENA_SIZE)
+            // {
+            //     return nullptr;
+            // }
+
+            new Virtual_Page(filename, block);
+
+        }
     }
     catch(NotEnoughVirtualMemory& e)
     {
@@ -177,6 +195,10 @@ int vm_fault(const void* addr, bool write_flag)
         else if (current_page->in_swap)
         {
             handle_fault_swap(write_flag, current_page);
+        }
+        else if(current_page->filename != DEFAULT_FILENAME)
+        {
+            handle_fault_file(write_flag, current_page);
         }
         else
         {

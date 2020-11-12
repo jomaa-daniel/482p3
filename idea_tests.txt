@@ -40,3 +40,6 @@ Physical Page States: Dirty/Notdirty
 2. Get a *filename make it old in clock and try to use it in vm_map
 3. Allocate 1025 fileback pages, it should not crash
 4. max out the virtual memory
+5. the filename isnt allocated at all
+6. the filename starts valid then runs into an invalid part < - and a really long file name that spans multiple pages
+

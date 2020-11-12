@@ -62,7 +62,7 @@ Virtual_Page::Virtual_Page() :  filename(DEFAULT_FILENAME), block(0), in_swap(fa
         current_arena->valid_arena_bound + VM_PAGESIZE;
 }
 
-Virtual_Page::Virtual_Page(char *filename_, unsigned int file_block_) : filename(filename_), block(file_block_) 
+Virtual_Page::Virtual_Page(const char *filename_, unsigned int file_block_) : filename(filename_), block(file_block_) 
 {
 
     check_virtual_page_bound(current_arena, filename);

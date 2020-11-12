@@ -13,7 +13,7 @@ class Virtual_Page
     //Creating fresh page for vm_create
     Virtual_Page();
     //Creating file backed pages
-    Virtual_Page(char *filename_, unsigned int file_block_);    
+    Virtual_Page(const char *filename_, unsigned int file_block_);    
     Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, std::string& otherfilename, 
     unsigned int vp_num, Arena *arena);
     bool operator==(const Virtual_Page& rhs);

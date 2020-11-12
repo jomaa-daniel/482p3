@@ -315,14 +315,18 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
     // R:0 W:1 assert not possible 
     //Propigate to all virtual owners
 
+
+
     //If dirty or write == 1 we must create a new ppage and give it a new swap.
     unordered_set<Virtual_Page*>& associated_pages = 
             ppage_to_owners[page->entry->ppage];
 
+    // WHERE ARE WE SETTING THIS IF IT IS DIRTY??
     bool & d_bit = ppage_in_clock[page->entry->ppage]->dirty;
 
     // copy on write, shared physical ppage
-    if (write_flag and ppage_to_owners[page->entry->ppage].size() != 1)
+    if (write_flag and ppage_to_owners[page->entry->ppage].size() != 1 
+        and page->filename == DEFAULT_FILENAME)
     {
         // give new phys page and swap block, pop from current owners
         // REMOVED THE ADDING TO THE SWAP BLOCK CODE
@@ -370,13 +374,22 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
     else
     {
         // propigate a referenced accross all associated pages
+        if (write_flag)
+        {
+            d_bit = write_flag;
+        }
+
         for (auto assoc_page : associated_pages)
         {
             assert(assoc_page->in_clock);
             assert(page->entry->write_enable == 0 and 
             (page->entry->read_enable == 0 or page->entry->read_enable==1));
             assoc_page->entry->read_enable = 1;
-            if (write_flag) // it only reaches this case if there is 
+            if (page->filename != DEFAULT_FILENAME) // filebacked functionality
+            {
+                assoc_page->entry->write_enable = 1;
+            }
+            else if (write_flag) // it only reaches this case if there is 
                             // one owner,else it would branch into above if statement
             {
                 assoc_page->entry->write_enable = d_bit;
@@ -388,6 +401,8 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
 
 void handle_fault_swap(bool write_flag, Virtual_Page* page)
 {
+    //assert you are not file backed
+    assert(page->filename == DEFAULT_FILENAME);
 
     // assert that the swap block is in fact valid
     assert(swap_block_to_owners.find(page->block) != end(swap_block_to_owners));
@@ -438,21 +453,68 @@ void handle_fault_swap(bool write_flag, Virtual_Page* page)
             //If we are trying
             
             virtual_page->in_clock = true;
-            virtual_page->entry->ppage = new_phys_page->ppage_location; // TODO is this right??
+            virtual_page->entry->ppage = new_phys_page->ppage_location; 
             virtual_page->entry->read_enable = 1;
             virtual_page->entry->write_enable = write_flag;
-            // ppage_to_owners[page->entry->ppage].insert(virtual_page); // TODO is this right?
         }
+        assert(ppage_to_owners.find(new_phys_page->ppage_location) == end(ppage_to_owners));
         ppage_to_owners[new_phys_page->ppage_location] = owners;
     }
-    // TODO propigate moving the swap file from swap to phys
+    // propigate moving the swap file from swap to phys
 
 
     file_read(nullptr, page->block, (void *) (uintptr_t(vm_physmem) + (VM_PAGESIZE * page->entry->ppage)));
 }
 
+
+void handle_fault_file(bool write_flag, Virtual_Page* page)
+{
+    /*
+        this could mean:
+        the file is not in phyiscal memory, we need to bring the 
+        block into physical memory via file_read, set the write_flag
+        we also need to propigate to all of the owners of this file 
+        that this block is now in physical memory but ONLY the
+        people that share this block      
+    */
+
+    assert(ppage_in_clock.find(page->entry->ppage) == end(ppage_in_clock));
+
+    Physical_Page * new_ppage = create_phys_page(write_flag);
+
+    file_read(page->filename.data(), page->block, (void*) (uintptr_t(vm_physmem) + (VM_PAGESIZE * new_ppage->ppage_location)));
+
+    assert(ppage_to_owners.find(new_ppage->ppage_location) == end(ppage_to_owners));
+
+    ppage_to_owners[new_ppage->ppage_location].insert(page);
+
+    assert(filename_to_owners.find(page->filename) != end(filename_to_owners));
+    assert(filename_to_owners[page->filename].find(page) != end(filename_to_owners[page->filename]));
+
+    unordered_set<Virtual_Page*>& block_owners = filename_to_owners[page->filename];
+
+    // loop over everyone that owns the same block as page in the same file and tell them
+    // that they are now in phys mem and add them as owners of this physical page
+
+    for (auto& vpage_owner : block_owners)
+    {
+        if (vpage_owner->block == page->block)
+        {
+            vpage_owner->in_clock = true;
+            vpage_owner->entry->ppage = new_ppage->ppage_location;
+            vpage_owner->entry->read_enable = 1;
+            vpage_owner->entry->write_enable = 1;
+            ppage_to_owners[new_ppage->ppage_location].insert(vpage_owner);
+        }
+    }
+
+   
+
+}
+
 void handle_fault_zero(bool write_flag, Virtual_Page* page)
 {
+    assert(page->filename == DEFAULT_FILENAME);
     assert(write_flag);
 
     // adds to clock

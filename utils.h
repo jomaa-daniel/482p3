@@ -66,6 +66,8 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page);
 
 void handle_fault_zero(bool write_flag, Virtual_Page* page);
 
+void handle_fault_file(bool write_flag, Virtual_Page * page);
+
 void write_to_swap(Virtual_Page* page);
 
 Physical_Page* create_phys_page(bool write_flag);

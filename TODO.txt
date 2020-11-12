@@ -9,11 +9,10 @@
 
 questions:
 
-If a new owner points to a physical page, is that physical page now Read only to all of its owners
-
-As soon as we start sharing we should turn off write_enable? We think so
 
 HANDLE LAST OWNER ON NOT REFERENCED OR OLD ON CLOCK
-
-
 WE MADE THE FILENAME DEFAULT TO SOMETHING STUPID
+
+will the filename ever be a string literal? does it matter?
+
+On a clock fault, dont we ever need to set the dirty but for filebacked fi write is enabled

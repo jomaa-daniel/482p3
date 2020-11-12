@@ -29,18 +29,20 @@ int main()
     // bring from swap file
     //Perform a write
     //becomes dirty
-    strcpy(page1, "1test.txt");
+    //strcpy(page1, "1test.txt");
+    cout <<page1 << "\n";
 
     //evict page1 again
-    for(int i = 0; i < 3; ++i)
-    {
-        /* Allocate swap-backed page from the arena */
-        char *page2 = (char *) vm_map(nullptr, 0);
-        strcpy(page2, "2.txt");
-    }
+    // for(int i = 0; i < 3; ++i)
+    // {
+    //     /* Allocate swap-backed page from the arena */
+    //     char *page2 = (char *) vm_map(nullptr, 0);
+    //     strcpy(page2, "2.txt");
+    // }
     //make sure page1 doesn;t write back to swap
 
-    cout << page1 << "\n";
+    // cout << page1 << "\n";
+    strcpy(page1, "1test.txt");
 
 }
 // parent 
