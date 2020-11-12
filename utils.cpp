@@ -373,6 +373,7 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
     }
     else
     {
+        
         // propigate a referenced accross all associated pages
         if (write_flag)
         {
@@ -472,7 +473,7 @@ void handle_fault_file(bool write_flag, Virtual_Page* page)
     /*
         this could mean:
         the file is not in phyiscal memory, we need to bring the 
-        block into physical memory via file_read, set the write_flag
+        block into physical memory via file_read, set the write_flag=1
         we also need to propigate to all of the owners of this file 
         that this block is now in physical memory but ONLY the
         people that share this block      
@@ -480,6 +481,8 @@ void handle_fault_file(bool write_flag, Virtual_Page* page)
 
     assert(ppage_in_clock.find(page->entry->ppage) == end(ppage_in_clock));
 
+
+    
     Physical_Page * new_ppage = create_phys_page(write_flag);
 
     file_read(page->filename.data(), page->block, (void*) (uintptr_t(vm_physmem) + (VM_PAGESIZE * new_ppage->ppage_location)));
@@ -506,6 +509,7 @@ void handle_fault_file(bool write_flag, Virtual_Page* page)
             vpage_owner->entry->write_enable = 1;
             ppage_to_owners[new_ppage->ppage_location].insert(vpage_owner);
         }
+        assert(vpage_owner->in_swap == false);
     }
 
    

@@ -27,7 +27,6 @@ int main()
     {
          vm_yield();
          cout << page << "\n";
-    
     }
     else
     {

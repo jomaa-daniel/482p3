@@ -16,3 +16,25 @@ WE MADE THE FILENAME DEFAULT TO SOMETHING STUPID
 will the filename ever be a string literal? does it matter?
 
 On a clock fault, dont we ever need to set the dirty but for filebacked fi write is enabled
+
+test cases we got rid of:
+
+test_evict_clean_write.4.cpp
+case test_double_child_sharing.4.cpp
+test_chain_forks_last_owners.4.cpp
+test_reuse_ppage_NS.4.cpp
+test_simplified_fork.4.cpp
+test_fork_chain_no_work.4.cpp
+
+
+---------TODO FOR TODAY---------
+1.) Cut out fatty test cases
+
+2.) look at 3 test failures
+    * ask question about test_copy_on_shared_swap.4.cpp
+    * problem with eviction? maybe problem with data?
+
+3.) make new targeted test cases 
+for the lifetime of the virtual page 
+
+//test cases for lifetime of virtual pages with data flowing through 2 pages

@@ -1,6 +1,6 @@
 Pager started with 4 physical memory pages
-vm_create	(17955, 17970)
+vm_create	(1154, 1814)
 vm_create returned 0
-vm_switch	(17970)
-					returning to (17970) with pages:
-vm_map		(17970)	0x56531b5ad020	0
+vm_switch	(1814)
+					returning to (1814) with pages:
+vm_map		(1814)	0x5613fd11c020	

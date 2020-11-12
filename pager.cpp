@@ -109,6 +109,7 @@ void *vm_map(const char *filename, unsigned int block)
 
     //Update ppage_to_owners new virtual page points to the 0 page (shared/probably)
     //assert_all();
+      
 
     try
     {
@@ -125,8 +126,18 @@ void *vm_map(const char *filename, unsigned int block)
             //     uintptr_t(VM_ARENA_BASEADDR) + VM_ARENA_SIZE)
             // {
             //     return nullptr;
-            // }
-
+                    // }
+            int sz = sizeof(filename);
+            if(sz == 7){
+                return nullptr;
+            }
+            const char* endofstr = filename + sz;
+            if (not_valid_addr(uintptr_t(endofstr)) 
+                or not_valid_addr(uintptr_t(filename)))
+            {
+                return nullptr;
+            }  
+            
             new Virtual_Page(filename, block);
 
         }
