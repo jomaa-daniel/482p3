@@ -8,8 +8,6 @@ unsigned int current_available_block = 0;
 // assertion flag
 bool clock_maxed_flag = false;
 
-
-
 void zero_out_ppage(unsigned int ppage)
 {
     for(unsigned int i = ppage * VM_PAGESIZE; 
@@ -47,7 +45,7 @@ void handle_last_owner(Physical_Page& old_phys_page)
     {
         Virtual_Page* last_owner = *begin(ppage_to_owners[old_phys_page.ppage_location]);
         // dont want to accidentally make it life when it is not referenced ONLY IF SWAP BACKED
-        if (last_owner->entry->read_enable == 1 and last_owner->filename != DEFAULT_STRING)
+        if (last_owner->entry->read_enable == 1 and last_owner->filename == DEFAULT_FILENAME)
         {
             // this if there is one owner they should not fault on a write
             last_owner->entry->write_enable = old_phys_page.dirty;
@@ -766,6 +764,7 @@ bool assert_clock_maintain_size()
     return true;
 }
 
+//Copy on write
 bool assert_correct_write_flag()
 {
     for (const auto& arena : pid_to_arena)
@@ -798,12 +797,58 @@ bool assert_correct_write_flag()
 
 bool assert_filenames_exist()
 {
-    
+    /*
+        if a virutal page has a filename that is file backed then it better 
+        have a corresponding filename and it also better be an owner of that file
+        in the filename_to_owners structure
+    */
+
+   for (const auto& arena : pid_to_arena)
+   {
+       for (const auto & virtual_page : arena.second->virtual_pages)
+       {
+           // if a virtual page has a filename, that filename better be in the filename to owners 
+           if (virtual_page.second->filename != DEFAULT_FILENAME 
+           and filename_to_owners.find(virtual_page.second->filename) == end(filename_to_owners))
+           {
+               return false;
+           }
+
+           // if there is a filename that matches the virtual page filename, it better be an owner of this filename
+           if (virtual_page.second->filename != DEFAULT_FILENAME 
+           and filename_to_owners.find(virtual_page.second->filename) != end(filename_to_owners)
+           and filename_to_owners[virtual_page.second->filename].find(virtual_page.second) 
+                == end(filename_to_owners[virtual_page.second->filename]))
+           {
+               return false;
+           }
+       }
+   }
+   return true;
 }
 
 bool assert_flag_correctness()
 {
-    
+    for (const auto& arena : pid_to_arena)
+    {
+        for (const auto& virtual_page : arena.second->virtual_pages)
+        {
+            //If its file backed
+            if(virtual_page.second->filename != DEFAULT_FILENAME){
+                if(virtual_page.second->entry->read_enable 
+                    != virtual_page.second->entry->write_enable){
+                    return false;
+                }
+            }   
+            //Swapped back 
+            if( virtual_page.second->entry->read_enable == 0
+                and virtual_page.second->entry->write_enable == 1){
+                return false;
+            }
+
+        }
+    }
+    return true;
 }
 
 void assert_all()
@@ -840,10 +885,12 @@ void assert_all()
 
     assert(assert_correct_write_flag());
     
-    //Assert if filename is default_string you can only be r:1w:1 or r:0w:0
+    //Assert if filename is DEFAULT_FILENAME you can only be r:1w:1 or r:0w:0
     //or if swap back you are not r:0w:1
+    assert(assert_flag_correctness());
 
     // assert that you are not in_swap
     // assert that if you are file backed that your file exsists in the filename_to_owners (full regression)
+    assert(assert_filenames_exist());
 }
 #endif /* _VM_PAGER_H_ */

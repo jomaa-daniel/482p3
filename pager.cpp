@@ -18,6 +18,8 @@ unsigned int available_swap_blocks;
 unsigned int MAX_SWAP_CAPACITY;
 unsigned int MAX_PHYSICAL_MEM_SIZE;
 
+std::string DEFAULT_FILENAME = "danyelnyko";
+
 /*
  * vm_init
  *

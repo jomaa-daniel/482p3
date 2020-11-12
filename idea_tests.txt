@@ -38,3 +38,5 @@ Physical Page States: Dirty/Notdirty
 
 1. Get a *filename evict it from physmem and try to use it in vm_map
 2. Get a *filename make it old in clock and try to use it in vm_map
+3. Allocate 1025 fileback pages, it should not crash
+4. max out the virtual memory

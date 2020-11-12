@@ -4,7 +4,7 @@
 
 
 
-void check_virtual_page_bound(Arena* arena)
+void check_virtual_page_bound(Arena* arena, std::string& filename)
 {
     
     if (arena->valid_arena_bound + VM_PAGESIZE > 
@@ -14,20 +14,23 @@ void check_virtual_page_bound(Arena* arena)
         throw NotEnoughVirtualMemory();
     }
 
-    //Eager Swap reservation (Make sure virtual page has enough space in swap file)
-    if(available_swap_blocks > 0){
-        //Iterate swap space
-        --available_swap_blocks;
+    if (filename == DEFAULT_FILENAME)
+    {
+        if(available_swap_blocks > 0){
+            //Iterate swap space
+            --available_swap_blocks;
+        }
+        else{
+            throw NotEnoughSwapBlocks();
+        } 
     }
-    else{
-        throw NotEnoughSwapBlocks();
-    } 
+    //Eager Swap reservation (Make sure virtual page has enough space in swap file)
 }
 
 //Default constructor for a 0 page.
-Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false), filename(DEFAULT_STRING) 
+Virtual_Page::Virtual_Page() :  filename(DEFAULT_FILENAME), block(0), in_swap(false), in_clock(false) 
 {
-    check_virtual_page_bound(current_arena);
+    check_virtual_page_bound(current_arena, filename);
 
     uintptr_t vp_num = get_virtual_page_num((void *) current_arena->valid_arena_bound);
         
@@ -61,7 +64,9 @@ Virtual_Page::Virtual_Page() : block(0), in_swap(false), in_clock(false), filena
 
 Virtual_Page::Virtual_Page(char *filename_, unsigned int file_block_) : filename(filename_), block(file_block_) 
 {
-    check_virtual_page_bound(current_arena);
+
+    check_virtual_page_bound(current_arena, filename);
+
     uintptr_t vp_num = get_virtual_page_num((void *) current_arena->valid_arena_bound);
 
     entry = &current_arena->page_table.ptes[vp_num];
@@ -98,13 +103,18 @@ Virtual_Page::Virtual_Page(char *filename_, unsigned int file_block_) : filename
     //Finally preform read so that memory actually exists in vm_phys_mem
     file_read(filename.data(), block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * entry->ppage)));
 
+
+    //Iterate arena bound for next page
+    current_arena->valid_arena_bound = 
+        current_arena->valid_arena_bound + VM_PAGESIZE;
+
 }
 
-Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, 
-unsigned int vp_num, Arena *arena, std::string& otherfilename)
-: block(block_), in_swap(in_swap_), in_clock(in_clock_) 
+Virtual_Page::Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, std::string& otherfilename,
+unsigned int vp_num, Arena *arena )
+: filename (otherfilename) , block(block_), in_swap(in_swap_), in_clock(in_clock_)
 {
-    check_virtual_page_bound(arena);
+    check_virtual_page_bound(arena, filename);
 
     //Check vp_num matches the copied pages vp_num ASSERT
     entry = &arena->page_table.ptes[vp_num];
@@ -125,6 +135,9 @@ unsigned int vp_num, Arena *arena, std::string& otherfilename)
     {               
         //This swap block must have 1 owner namely the source virtual page
         swap_block_to_owners[block].insert(this);
+    }
+    if(filename != DEFAULT_FILENAME){
+        filename_to_owners[filename].insert(this);
     }
         
     //Iterate arena bound for next page
@@ -154,7 +167,7 @@ Virtual_Page::~Virtual_Page()
     // IF I AM THE LAST OWNER OF THE FILENAME, // WRITE TO THE FILE IF DIRTY AND THEN ERASE THE FILENAME FROM THE MAP
 
     // assert filename is in owner???
-    if (this->filename != DEFAULT_STRING)
+    if (this->filename != DEFAULT_FILENAME)
     {
         assert(filename_to_owners.find(this->filename) != end(filename_to_owners));
     }
@@ -212,7 +225,6 @@ Virtual_Page::~Virtual_Page()
             //Check if this ppage is owned by someone
             assert(ppage_to_owners.find(this->entry->ppage) != ppage_to_owners.end());
             assert(ppage_to_owners[this->entry->ppage].find(this) != end(ppage_to_owners[this->entry->ppage]));
-            auto vp =  ppage_to_owners[this->entry->ppage].find(this);
             //Check this ppage is owned by this virtual page
             assert(*(ppage_to_owners[this->entry->ppage].find(this)) == this);
 

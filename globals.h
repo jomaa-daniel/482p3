@@ -16,6 +16,7 @@ using namespace std;
 
 const int DEBUG = 0;
 
+extern std::string DEFAULT_FILENAME;
 
 struct Physical_Page 
 {

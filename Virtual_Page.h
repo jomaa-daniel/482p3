@@ -2,7 +2,7 @@
 #define _vp_H_
 
 #include "vm_pager.h"
-std::string DEFAULT_STRING = "danyelnyko";
+#include <string>
 
 
 class Arena;
@@ -14,8 +14,8 @@ class Virtual_Page
     Virtual_Page();
     //Creating file backed pages
     Virtual_Page(char *filename_, unsigned int file_block_);    
-    Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, 
-    unsigned int vp_num, Arena *arena, std::string& otherfilename);
+    Virtual_Page(unsigned int block_, bool in_swap_, bool in_clock_, std::string& otherfilename, 
+    unsigned int vp_num, Arena *arena);
     bool operator==(const Virtual_Page& rhs);
     Virtual_Page& operator=(const Virtual_Page& rhs)
     {
@@ -26,12 +26,12 @@ class Virtual_Page
         return *this;
     }
     ~Virtual_Page();
+    std::string filename;
     page_table_entry_t* entry;
     //Never the case where shared virtual pages have conflicting blocks
     unsigned int block;
     bool in_swap; // for evictions (for the first appearance), if dirty=0 and has_blo
     bool in_clock;
-    std::string filename;
 };
 
 #endif /* _VM_PAGER_H_ */
