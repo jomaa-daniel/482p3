@@ -4,6 +4,7 @@
 #include "vm_pager.h"
 #include "vm_arena.h"
 #include "globals.h"
+#include <vector>
 #include <cassert>
 
 extern unsigned int current_available_block;
@@ -29,6 +30,8 @@ void handle_last_owner(Physical_Page& old_phys_page);
 
 void zero_out_ppage(unsigned int ppage);
 
+unsigned int get_offset_num(const void* addr);
+
 unsigned int get_virtual_page_num(const void* addr);
 
 unsigned int find_open_block();
@@ -51,6 +54,10 @@ Physical_Page* add_new_page_to_clock(unsigned int ppage_location, bool write_fla
 // in the clock
 void evict_phys_page(Physical_Page& page);
 
+void evict_swap_back_handler(Physical_Page& ppage, unordered_set<Virtual_Page*>& owners);
+
+void evict_file_back_handler(Physical_Page& ppage, unordered_set<Virtual_Page*>& owners);
+
 
 void propigate_referenced(bool write_flag, Virtual_Page* page);
 
@@ -59,8 +66,6 @@ bool not_valid_addr(uintptr_t addr);
 void handle_fault_clock(uintptr_t addr, bool write_flag);
 
 void handle_fault_swap(bool write_flag, Virtual_Page* page);
-
-void handle_last_owner(Physical_Page* old_phys_page);
 
 void handle_fault_clock(bool write_flag, Virtual_Page* page);
 
@@ -71,6 +76,12 @@ void handle_fault_file(bool write_flag, Virtual_Page * page);
 void write_to_swap(Virtual_Page* page);
 
 Physical_Page* create_phys_page(bool write_flag);
+
+std::string read_ppage_for_filename(const void * start_addr, const void * end_addr, bool& found_end);
+
+void copy_from_physmem(std::vector<char>& output_buffer, unsigned int ppage_location);
+
+void copy_to_physmem(std::vector<char>& output_buffer, unsigned int ppage_location);
 
 /////////////////// ASSERT FUNCTIONS //////////////////
 
@@ -114,6 +125,12 @@ bool assert_correct_write_flag();
 bool assert_filenames_exist();
 
 bool assert_flag_correctness();
+
+bool assert_fileback_not_in_swap();
+
+bool assert_out_of_clock_flags();
+
+bool assert_ppage_owner_type_correcness();
 
 
 #endif /* _VM_PAGER_H_ */

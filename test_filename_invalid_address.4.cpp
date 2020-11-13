@@ -16,7 +16,7 @@ int main()
     /* Allocate swap-backed page from the arena */
     for (int i = 0; i < 4095; ++i)
     {
-        char *page = (char *) vm_map("solo", 0);
+        char *page = (char *) vm_map("yeah", 0);
     }
 
     char * extralong = (char *) vm_map(nullptr, 0);

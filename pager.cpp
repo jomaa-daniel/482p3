@@ -113,7 +113,7 @@ void *vm_map(const char *filename, unsigned int block)
 
     try
     {
-        if (filename == nullptr)
+        if(filename == nullptr)
         {
             new Virtual_Page();
         }
@@ -127,18 +127,37 @@ void *vm_map(const char *filename, unsigned int block)
             // {
             //     return nullptr;
                     // }
-            int sz = sizeof(filename);
-            if(sz == 7){
-                return nullptr;
-            }
-            const char* endofstr = filename + sz;
-            if (not_valid_addr(uintptr_t(endofstr)) 
-                or not_valid_addr(uintptr_t(filename)))
+
+            if (not_valid_addr(uintptr_t(filename)))
             {
                 return nullptr;
-            }  
+            }
+
+            std::string read_string = "";              
+            uintptr_t file_cursor = get_virtual_page_num(filename);
+            unsigned int offset = get_offset_num(filename);
+            bool found_end = false;
+
+            while (!found_end)
+            {
+                void *vp_addr = (void*) (uintptr_t(VM_ARENA_BASEADDR) + (file_cursor * VM_PAGESIZE));
+                if(not_valid_addr(uintptr_t(vp_addr)))
+                {
+                    return nullptr;
+                }
+                //If my page is read enabled i can safely look at the ppage and read the page
+                if(current_arena->virtual_pages[file_cursor]->entry->read_enable == 0)
+                {
+                    vm_fault(vp_addr ,false);
+                }
+                void *ppage_start = (void *)((current_arena->virtual_pages[file_cursor]->entry->ppage * VM_PAGESIZE) + offset + uintptr_t(vm_physmem));
+                void *ppage_end = (void *)((current_arena->virtual_pages[file_cursor]->entry->ppage * VM_PAGESIZE) + VM_PAGESIZE +  uintptr_t(vm_physmem));
+                //Safe to read ppage now
+                read_string.append(std::move(read_ppage_for_filename(ppage_start, ppage_end, found_end)));
+                file_cursor = file_cursor+VM_PAGESIZE;
+            }
             
-            new Virtual_Page(filename, block);
+            new Virtual_Page(read_string.data(), block);
 
         }
     }
@@ -214,8 +233,7 @@ int vm_fault(const void* addr, bool write_flag)
         else
         {
             handle_fault_zero(write_flag, current_page);
-        }
-        
+        }        
 
         assert_all();
         return 0;

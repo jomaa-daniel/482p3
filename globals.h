@@ -33,6 +33,7 @@ struct Physical_Page
 
     Physical_Page& operator=(const Physical_Page& rhs)
     {
+        //The only time we copy physical pages is copy on write which means the page we wrote to must be write_enable
         this->dirty = 1;
         int base_lhs = this->ppage_location * VM_PAGESIZE;
         int base_rhs = rhs.ppage_location * VM_PAGESIZE;

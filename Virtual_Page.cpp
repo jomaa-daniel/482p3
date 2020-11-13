@@ -71,13 +71,13 @@ Virtual_Page::Virtual_Page(const char *filename_, unsigned int file_block_) : fi
 
     entry = &current_arena->page_table.ptes[vp_num];
 
-    // create a new physical page
-    Physical_Page * new_page = create_phys_page(true);
+    // create a new physical page with write flag false since he is not dirty but able to be written to
+    Physical_Page * new_page = create_phys_page(false);
     
-    //Make sure to set entry to be appropriate for ppage 0.
+    //Make sure to set entry to be appropriate for ppage .
     entry->ppage = new_page->ppage_location;
     entry->read_enable = 1;
-    entry->write_enable = 1;
+    entry->write_enable = 0;
     
     this->in_clock = true;
 
@@ -177,7 +177,7 @@ Virtual_Page::~Virtual_Page()
             remove myself as owner of a filename
             remove the filename 
     */
-    if (!this->filename.empty() and filename_to_owners.find(this->filename) != end(filename_to_owners)) // im filebacked
+    if (this->filename != DEFAULT_FILENAME and filename_to_owners.find(this->filename) != end(filename_to_owners)) // im filebacked
     {
         
         filename_to_owners[this->filename].erase(this);
@@ -255,9 +255,14 @@ Virtual_Page::~Virtual_Page()
             and this->entry->ppage != 0)
             {
                 assert(ppage_in_clock.find(this->entry->ppage) != end(ppage_in_clock));
+                auto last_owner = (*begin(ppage_to_owners[this->entry->ppage]));
                 
                 //Checks if there is 1 more owner and gives him write permission
-                handle_last_owner(*ppage_in_clock[this->entry->ppage]);
+                 if(last_owner->entry->read_enable == 1 
+                 and last_owner->filename == DEFAULT_FILENAME)
+                {
+                    last_owner->entry->write_enable = ppage_in_clock[last_owner->entry->ppage]->dirty;
+                }
             }
 
             // if there is no more owners, then remove the empty set

@@ -1,6 +1,25 @@
 Pager started with 4 physical memory pages
-vm_create	(1154, 1814)
+vm_create	(8240, 11035)
 vm_create returned 0
-vm_switch	(1814)
-					returning to (1814) with pages:
-vm_map		(1814)	0x5613fd11c020	
+vm_switch	(11035)
+					returning to (11035) with pages:
+vm_map		(11035)	0x0	0
+vm_map returned 0x600000000
+					returning to (11035) with pages:
+					r	vpage 0x600000	ppage 0x0
+vm_fault	(11035)	0x600000000	write
+vm_fault returned 0
+					returning to (11035) with pages:
+					rw	vpage 0x600000	ppage 0x1
+vm_create	(11035, 11036)
+vm_create returned 0
+					returning to (11035) with pages:
+					r	vpage 0x600000	ppage 0x1
+vm_switch	(11036)
+					returning to (11036) with pages:
+					r	vpage 0x600000	ppage 0x1
+vm_destroy	(11036)
+vm_switch	(11035)
+					returning to (11035) with pages:
+					rw	vpage 0x600000	ppage 0x1
+vm_destroy	(11035)

@@ -33,8 +33,24 @@ test_fork_chain_no_work.4.cpp
 2.) look at 3 test failures
     * ask question about test_copy_on_shared_swap.4.cpp
     * problem with eviction? maybe problem with data?
-
+    * ask quesiton about test_file_name-invalid_address 
+    * Can we map to a filebacked page and just print the file backed page with cout << *filepage
 3.) make new targeted test cases 
 for the lifetime of the virtual page 
 
+TEST CASE FOR EVICTING a Page you are about to copy and 
+
+
+WHEN WE COPY ON WRITE WE MUST MAKE SURE THAT THE PAGE IS IN PHYSICAL MEMORY
+LOOK AT BUFFER SOLUTION TO SOLVE COPY ON WRITE WHEN WE EVICT DATA THAT WE NEED
+CHANGE .DATA FUNCTIONALITY
+
+
+question:
+
+    what if the filename spans multiple pages, how can we get the full filename to work with?
+    do we have to account for this or can we just assume the user will knows?
+    If it cant span multiple pages then a filename cannot be more than 1 page length
+
+    
 //test cases for lifetime of virtual pages with data flowing through 2 pages

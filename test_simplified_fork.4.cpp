@@ -14,9 +14,9 @@ int main()
         happens
     */
 
-// Parent has 1 virtual page 0x00060000
-// Parent current_arena_bound is 0x0006001000
-// ppage1 is being created
+    // Parent has 1 virtual page 0x00060000
+    // Parent current_arena_bound is 0x0006001000
+    // ppage1 is being created
 
     pid_t pid;
     std::vector<char*> ppage = std::vector<char*>();

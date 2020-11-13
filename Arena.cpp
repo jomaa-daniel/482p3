@@ -13,7 +13,6 @@ Arena::Arena()
 
 Arena::Arena(Arena& other)
 { 
-    this->valid_arena_bound = other.valid_arena_bound;
     
     for (unsigned int i = 0; i < VM_ARENA_SIZE/VM_PAGESIZE; ++i)
     {
@@ -34,7 +33,7 @@ Arena::Arena(Arena& other)
             // check if filebacked, copy over old entry
             if (valid_page->filename != DEFAULT_FILENAME)
             { 
-                c.write_enable = p.write_enable = p.read_enable;
+                c.write_enable = p.write_enable;
             }
 
             
@@ -51,7 +50,7 @@ Arena::Arena(Arena& other)
             );
         }
     }
-
+    
     assert_arenas_sync(this, &other);
 
 }
