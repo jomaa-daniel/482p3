@@ -417,7 +417,7 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
         if (page->in_swap)
         {
             swap_block_to_owners[page->block].erase(page);
-            page->in_swap = false;
+            page->in_swap = false;  
         }
 
         copy_to_physmem(buffer, new_ppage->ppage_location);    
@@ -434,8 +434,8 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
         for (auto assoc_page : associated_pages)
         {
             assert(assoc_page->in_clock);
-            assert(page->entry->write_enable == 0 and 
-            (page->entry->read_enable == 0 or page->entry->read_enable==1));
+            assert(assoc_page->entry->write_enable == 0 and 
+            (assoc_page->entry->read_enable == 0 or assoc_page->entry->read_enable==1));
             assoc_page->entry->read_enable = 1;
             assoc_page->entry->write_enable = d_bit;          
         }
@@ -462,7 +462,9 @@ void handle_fault_swap(bool write_flag, Virtual_Page* page)
     // adds to clock
     Physical_Page* new_phys_page = create_phys_page(write_flag);
     Physical_Page old_ppage(*new_phys_page);
-    file_read(nullptr, page->block, (void *) (uintptr_t(vm_physmem) + (VM_PAGESIZE * page->entry->ppage)));
+    file_read(nullptr, page->block, (void *) (uintptr_t(vm_physmem) + (VM_PAGESIZE * new_phys_page->ppage_location)));
+    //EXTEREMELYYYY WRONG
+    // file_read(nullptr, page->block, (void *) (uintptr_t(vm_physmem) + (VM_PAGESIZE * page->entry->ppage)));
 
 
     // if write and multiple owners: 
@@ -522,7 +524,8 @@ void handle_fault_swap(bool write_flag, Virtual_Page* page)
 void handle_fault_file(bool write_flag, Virtual_Page* page)
 {
     /*
-        this could mean:
+        this could mean: this file is not in memory we need to bring it back
+
         the file is not in phyiscal memory, we need to bring the 
         block into physical memory via file_read, set the write_flag=1
         we also need to propigate to all of the owners of this file 
@@ -738,7 +741,7 @@ bool assert_no_write_on_share(){
         //If its shared
         if(ppage_owner_pair.second.size() > 1){
             for(const auto vp : ppage_owner_pair.second){
-                if(vp->entry->write_enable == 1){
+                if(vp->entry->write_enable == 1 and vp->filename == DEFAULT_FILENAME){
                     return false;
                 }
             }
@@ -1091,6 +1094,44 @@ bool assert_ppage_owner_type_correcness()
    return true;
 }
 
+bool assert_fileback_owner_sync()
+{
+    /*
+        this will go through each filename virtual page owner
+        and make sure that the virtal pages that share a block have the same info
+        also makes sure that they dont point to the zero ppage
+    */
+
+
+    // input all of the virtual pages with the same block into unordered sets
+   for (const auto& vp_owners : filename_to_owners)
+   {
+        std::unordered_map<unsigned int, unordered_set<Virtual_Page*>> set;
+       for (const auto& vpage : vp_owners.second)
+       {
+           set[vpage->block].insert(vpage);
+       }
+
+       for (const auto & pr : set)
+        {
+            Virtual_Page * start = *begin(pr.second);
+            for (const auto vpage : pr.second)
+            {
+                if (!(*start == *vpage))
+                {
+                    return false;
+                }
+            }
+        }
+   }
+
+    // run thru all of the assoc blocks and make sure they are all equal to the same thing
+   
+
+   return true;
+}
+
+
 void assert_all()
 {
     if (DEBUG)
@@ -1136,5 +1177,7 @@ void assert_all()
     assert(assert_out_of_clock_flags());
 
     assert(assert_fileback_not_in_swap());
+
+    assert(assert_fileback_owner_sync());
 }
 #endif /* _VM_PAGER_H_ */

@@ -70,40 +70,39 @@ Virtual_Page::Virtual_Page(const char *filename_, unsigned int file_block_) : fi
     uintptr_t vp_num = get_virtual_page_num((void *) current_arena->valid_arena_bound);
 
     entry = &current_arena->page_table.ptes[vp_num];
-
-    // create a new physical page with write flag false since he is not dirty but able to be written to
-    Physical_Page * new_page = create_phys_page(false);
     
-    //Make sure to set entry to be appropriate for ppage .
-    entry->ppage = new_page->ppage_location;
-    entry->read_enable = 1;
+    //Set ppage to 0 so it doesnt default to 0.
+    entry->ppage = 1;
+    entry->read_enable = 0;
     entry->write_enable = 0;
-    
-    this->in_clock = true;
-
+    this->in_swap = false;
+    this->in_clock = false;
+    //no overwrites
     assert(current_arena->virtual_pages.find(vp_num) == end(current_arena->virtual_pages));
+
     current_arena->virtual_pages[vp_num] = this;
-
-    //Update ppage_to_owner map/ so this virtual page owns 0 page
-    if(ppage_to_owners.find(entry->ppage) == ppage_to_owners.end())
-    {
-        ppage_to_owners[entry->ppage] = std::unordered_set<Virtual_Page*>();
-    }
-
-    ppage_to_owners[entry->ppage].insert(this);
 
     // update the file to owner such that this virutal page is a new owner of the file
     if (filename_to_owners.find(filename) == end(filename_to_owners))
     {
         filename_to_owners[filename] = std::unordered_set<Virtual_Page*>();
     }
+    else{
+        //someone else could own this fileback page so check the block and if they do take its info.
+        for(auto vp: filename_to_owners[filename]){
+            if(vp->block == block){
+                //Take his info
+                entry->ppage = vp->entry->ppage;
+                entry->write_enable = vp->entry->write_enable;
+                entry->read_enable = vp->entry->read_enable;
+                in_clock = vp->in_clock;
+                assert(!vp->in_swap);
+                break;
+            }
+        }
+    }
     
     filename_to_owners[filename].insert(this);
-
-    //Finally preform read so that memory actually exists in vm_phys_mem
-    file_read(filename.data(), block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * entry->ppage)));
-
-
     //Iterate arena bound for next page
     current_arena->valid_arena_bound = 
         current_arena->valid_arena_bound + VM_PAGESIZE;

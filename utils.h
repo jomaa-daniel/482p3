@@ -132,5 +132,7 @@ bool assert_out_of_clock_flags();
 
 bool assert_ppage_owner_type_correcness();
 
+bool assert_fileback_owner_sync();
+
 
 #endif /* _VM_PAGER_H_ */

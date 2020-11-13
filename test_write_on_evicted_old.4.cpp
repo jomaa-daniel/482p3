@@ -50,7 +50,7 @@ int main()
 
     
     //Make old to 7
-    strcpy(page9read, "randomtext.txt");
+    strcpy(page9read, "something new");
 
     for(int i = 0; i < 3; ++i)
     {

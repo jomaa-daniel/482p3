@@ -54,3 +54,10 @@ question:
 
     
 //test cases for lifetime of virtual pages with data flowing through 2 pages
+
+
+
+
+THINGS WE CONFIRMED
+test case test_write_on_evicted_old
+test_chain_fork_shared_write.4.cpp
