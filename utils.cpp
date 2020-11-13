@@ -605,13 +605,13 @@ std::string read_ppage_for_filename(const void * start_addr, const void * end_ad
     */
    std::string filename;
 
-    while (*((char *)start_addr) != '\0' and start_addr != end_addr)
+    while (start_addr != end_addr and *((char *)start_addr) != '\0')
     {
         filename.push_back(*((char *)start_addr));
         start_addr = (void *)(uintptr_t(start_addr) + 1);
     }
 
-    found_end = (*((char *)start_addr) == '\0');
+    found_end = (start_addr != end_addr);
 
     return filename;   
 }

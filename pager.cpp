@@ -138,6 +138,14 @@ void *vm_map(const char *filename, unsigned int block)
             unsigned int offset = get_offset_num(filename);
             bool found_end = false;
 
+            Virtual_Page* current_vpage = current_arena->virtual_pages[file_cursor];
+            if (!current_vpage->entry->read_enable)
+            {
+                vm_fault(filename, false);
+            }
+
+            void *ppage_start = (void *)((current_arena->virtual_pages[file_cursor]->entry->ppage * VM_PAGESIZE) + offset + uintptr_t(vm_physmem));
+            void *ppage_end = (void *)((current_arena->virtual_pages[file_cursor]->entry->ppage * VM_PAGESIZE) + VM_PAGESIZE + uintptr_t(vm_physmem));
             while (!found_end)
             {
                 void *vp_addr = (void*) (uintptr_t(VM_ARENA_BASEADDR) + (file_cursor * VM_PAGESIZE));
@@ -149,15 +157,20 @@ void *vm_map(const char *filename, unsigned int block)
                 if(current_arena->virtual_pages[file_cursor]->entry->read_enable == 0)
                 {
                     vm_fault(vp_addr ,false);
+                    ppage_start = (void *)((current_arena->virtual_pages[file_cursor]->entry->ppage * VM_PAGESIZE) + uintptr_t(vm_physmem));
+                    ppage_end = (void *)((current_arena->virtual_pages[file_cursor]->entry->ppage * VM_PAGESIZE) + VM_PAGESIZE + uintptr_t(vm_physmem));
                 }
-                void *ppage_start = (void *)((current_arena->virtual_pages[file_cursor]->entry->ppage * VM_PAGESIZE) + offset + uintptr_t(vm_physmem));
-                void *ppage_end = (void *)((current_arena->virtual_pages[file_cursor]->entry->ppage * VM_PAGESIZE) + VM_PAGESIZE +  uintptr_t(vm_physmem));
+
+                
+
                 //Safe to read ppage now
                 read_string.append(std::move(read_ppage_for_filename(ppage_start, ppage_end, found_end)));
-                file_cursor = file_cursor+VM_PAGESIZE;
+                ppage_start = ppage_end;
+                ppage_end = (void *) (uintptr_t(ppage_end) + VM_PAGESIZE);
+                file_cursor++;
             }
             
-            new Virtual_Page(read_string.data(), block);
+            new Virtual_Page(read_string.c_str(), block);
 
         }
     }

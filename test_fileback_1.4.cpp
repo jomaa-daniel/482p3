@@ -27,14 +27,16 @@ int main()
     char *filename = (char *) vm_map(nullptr, 0);
     strcpy(filename,"data1.bin");
     // at stage 2 in memory
-    char *file = (char *) vm_map(filename, 1);
+    
+    char *file = (char *) vm_map(filename, 2);
     strcpy(filename,"fakename.txt");
 
     for (int i = 0; i < 10; i++)
     {
        char *e = (char *) vm_map(nullptr, 0);
-        strcpy(e,"data1.bin");
+        strcpy(e,"data1.fake");
     } 
+
     //evict both
     for(int i= 0; i < 4096; ++i)
     {

@@ -18,6 +18,7 @@ test_fileback_3.4.cpp
 test_fileback_4.4.cpp
 test_fileback_5.4.cpp
 test_fileback_6.4.cpp
+test_fileback_7.4.cpp
 test_filename_invalid_address.4.cpp
 test_max_swap_blocks_NS.4.cpp
 test_multi_page_filename.4.cpp
