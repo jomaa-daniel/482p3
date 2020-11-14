@@ -1,5 +1,3 @@
-#define NDEBUG
-
 #ifndef _utils_H_
 #define _utils_H_
 #include "utils.h"

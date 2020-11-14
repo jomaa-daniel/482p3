@@ -1,4 +1,3 @@
-#define NDEBUG
 
 #include "vm_arena.h"
 #include "Arena.h"

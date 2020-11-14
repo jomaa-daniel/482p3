@@ -1,4 +1,3 @@
-#define NDEBUG
 #include "Virtual_Page.h"
 #include "globals.h"
 #include "utils.h"
