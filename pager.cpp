@@ -14,6 +14,8 @@ std::unordered_map<pid_t, Arena*> pid_to_arena;
 std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> swap_block_to_owners;
 std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> ppage_to_owners;
 std::unordered_map<std::string, std::unordered_set<Virtual_Page*>> filename_to_owners;
+std::unordered_map<std::string, unordered_map<unsigned int, Physical_Page>> filename_to_ppage;
+std::unordered_map<unsigned int, Ghost_Page> ppage_to_ghostpage;
 
 unsigned int available_swap_blocks;
 unsigned int MAX_SWAP_CAPACITY;

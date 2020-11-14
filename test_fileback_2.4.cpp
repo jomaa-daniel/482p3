@@ -21,37 +21,81 @@ using std::cout;
 
 int main()
 {
+    pid_t pid;
+    pid = fork();
 
+    if(pid)
+    {
+        vm_yield();
+        //Points to zero
+        char *filename = (char *) vm_map(nullptr, 0);
+        strcpy(filename,"data1.bin");
+        // at stage 2 in memory
+        char *file = (char *) vm_map(filename, 1);
+        strcpy(filename,"fakename.txt");
+
+        for (int i = 0; i < 10; i++)
+        {
+        char *e = (char *) vm_map(nullptr, 0);
+            strcpy(e,"data1.bin");
+        } 
+        //bring back and read
+        for(int i= 0; i < 4096; ++i)
+        {
+            cout << file[i];
+        }
+        //evict again
+        for (int i = 0; i < 10; i++)
+        {
+        char *e = (char *) vm_map(nullptr, 0);
+            strcpy(e,"data1.bin");
+        } 
+        //evict both
+        //bring both back
+        //write to him
+        for(int i= 0; i < 4096; ++i)
+        {
+            file[i] = 'a';
+        }
+    }
+    else
+    {
+        //Points to zero
+        char *f = (char *) vm_map(nullptr, 0);
+        char *ff = (char *) vm_map(nullptr, 0);
+        char *filename = (char *) vm_map(nullptr, 0);
+        strcpy(filename,"data1.bin");
+        // at stage 2 in memory
+        char *file = (char *) vm_map(filename, 1);
+        strcpy(filename,"fakename.txt");
+
+        for (int i = 0; i < 10; i++)
+        {
+        char *e = (char *) vm_map(nullptr, 0);
+            strcpy(e,"data1.bin");
+        } 
+        //bring back and read
+        for(int i= 0; i < 4096; ++i)
+        {
+            cout << file[i];
+        }
+        //evict again
+        for (int i = 0; i < 10; i++)
+        {
+        char *e = (char *) vm_map(nullptr, 0);
+            strcpy(e,"data1.bin");
+        } 
+        //evict both
+        //bring both back
+        //write to him
+        for(int i= 0; i < 4096; ++i)
+        {
+            file[i] = 'a';
+        }
+
+    }
     
-      //Points to zero
-    char *filename = (char *) vm_map(nullptr, 0);
-    strcpy(filename,"data1.bin");
-    // at stage 2 in memory
-    char *file = (char *) vm_map(filename, 1);
-    strcpy(filename,"fakename.txt");
 
-    for (int i = 0; i < 10; i++)
-    {
-       char *e = (char *) vm_map(nullptr, 0);
-        strcpy(e,"data1.bin");
-    } 
-    //bring back and read
-    for(int i= 0; i < 4096; ++i)
-    {
-         cout << file[i];
-    }
-    //evict again
-    for (int i = 0; i < 10; i++)
-    {
-       char *e = (char *) vm_map(nullptr, 0);
-        strcpy(e,"data1.bin");
-    } 
-    //evict both
-    //bring both back
-    //write to him
-    for(int i= 0; i < 4096; ++i)
-    {
-         file[i] = 'a';
-    }
+
     
 }

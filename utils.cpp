@@ -4,6 +4,7 @@
 #include "globals.h"
 #include <vector>
 
+
 unsigned int current_available_block = 0;
 
 // assertion flag
@@ -54,6 +55,7 @@ void copy_from_physmem(std::vector<char>& output_buffer, unsigned int ppage_loca
         output_buffer.push_back(((char *)vm_physmem)[base_lhs + i]);
     }
 }
+
 void copy_to_physmem(std::vector<char>& input_buffer, unsigned int ppage_location)
 {
     int base_lhs = ppage_location * VM_PAGESIZE;
@@ -66,8 +68,27 @@ void copy_to_physmem(std::vector<char>& input_buffer, unsigned int ppage_locatio
 
 
 bool check_ppage_owners_age(Physical_Page *phys_page){
+      
 
+    if (ppage_to_ghostpage.find(phys_page->ppage_location) != end(ppage_to_ghostpage))
+    {
+         assert(ppage_to_owners.find(phys_page->ppage_location) == end(ppage_to_owners));
+        // if this ghost page is referenced
+        if (ppage_to_ghostpage[phys_page->ppage_location].referenced == 1)
+        {
+            ppage_to_ghostpage[phys_page->ppage_location].referenced = 0;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
+    // if this phys page is in the map return true???????
+    assert(ppage_to_owners.find(phys_page->ppage_location) != end(ppage_to_owners));
+
+    
     bool recent = (*begin(ppage_to_owners[phys_page->ppage_location]))->entry->read_enable;
     
     // if first one is old:
@@ -76,7 +97,7 @@ bool check_ppage_owners_age(Physical_Page *phys_page){
     // if first one is NOT old
         // assert ALL of them are not old and change them to old at the same 
 
-
+    //going through all of the associated owners.
     for ( auto vp : ppage_to_owners[phys_page->ppage_location] ){
         assert(recent == vp->entry->read_enable);// CHANGED FROM != to ==
         if (vp->entry->read_enable == 1){
@@ -97,7 +118,6 @@ bool check_ppage_owners_age(Physical_Page *phys_page){
 // should we delete here and return a physical page on the stack?
 Physical_Page find_victim()
 {
-
     // make sure to keep in parallel with map
     //delete from deque and map
     Physical_Page* next_page = nullptr;
@@ -206,7 +226,7 @@ void evict_file_back_handler(Physical_Page& ppage, unordered_set<Virtual_Page*> 
     if (ppage.dirty)
     {
         //Write back
-        file_write(vp->filename.data(), vp->block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * vp->entry->ppage)));
+        file_write(vp->filename.c_str(), vp->block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * vp->entry->ppage)));
     }
 
     for (const auto & virtual_page : owners)
@@ -224,21 +244,56 @@ void evict_file_back_handler(Physical_Page& ppage, unordered_set<Virtual_Page*> 
 
 void evict_phys_page(Physical_Page& ppage)
 {
-    
-    // propigate is_mem false
-    unordered_set<Virtual_Page*> owners = ppage_to_owners[ppage.ppage_location]; 
+    ////TODOfile
+    //We check if the physical page is a file with the unordered set
+    if(ppage_to_ghostpage.find(ppage.ppage_location) != end(ppage_to_ghostpage))
+    {
+        std::string filename = ppage_to_ghostpage[ppage.ppage_location].filename;
+        unsigned int block = ppage_to_ghostpage[ppage.ppage_location].block;
 
-    
-    if((*begin(owners))->filename == DEFAULT_FILENAME){
-        evict_swap_back_handler(ppage, owners);
-    }
-    else{
-        evict_file_back_handler(ppage, owners);
-    }
+        // assert that the filename has a block associated with it
+        assert(filename_to_ppage.find(filename) != end(filename_to_ppage));
+        // assert that the filename and block as a phys page associated with it
+        assert(filename_to_ppage[filename].find(block) != end(filename_to_ppage[filename]));
+        // assert that the phyusical page that is associate with this filename and block is the same as the one that
+        //      we are working on
+        assert(filename_to_ppage[filename][block].ppage_location == ppage.ppage_location);
 
-    //Delete your physical page owners from ppage_to_owners
-    ppage_to_owners.erase(ppage.ppage_location);
-    
+        //Write back
+        file_write(filename.c_str(), block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * ppage.ppage_location)));
+        
+        filename_to_ppage[filename].erase(block);
+
+        if(filename_to_ppage[filename].empty())
+        {
+            filename_to_ppage.erase(filename);
+        }
+        ppage_to_ghostpage.erase(ppage.ppage_location);
+
+    }
+    else
+    {
+        // propigate is_mem false
+        assert(ppage_to_owners.find(ppage.ppage_location) != end(ppage_to_owners));
+        assert(!ppage_to_owners[ppage.ppage_location].empty());
+        unordered_set<Virtual_Page*> owners = ppage_to_owners[ppage.ppage_location]; 
+
+        if((*begin(owners))->filename == DEFAULT_FILENAME)
+        {
+            evict_swap_back_handler(ppage, owners);
+        }
+        else
+        {
+            evict_file_back_handler(ppage, owners);
+        }
+
+        //Delete your physical page owners from ppage_to_owners
+        ppage_to_owners.erase(ppage.ppage_location);
+        if (ppage_to_owners[ppage.ppage_location].empty())
+        {
+            ppage_to_owners.erase(ppage.ppage_location);
+        }
+    }
 }
 
 // allocates and adds new physical page to the clock
@@ -316,7 +371,7 @@ Physical_Page* create_phys_page(bool write_flag)
     //Need to bring you into memory 
     //Check if there are any empty ppages to add to
     //if not evict and do (associated changes in eviction)
-
+    auto a = filename_to_ppage;
     unsigned int free_ppage = 0;
     if (mem_clock.size() + 1 == MAX_PHYSICAL_MEM_SIZE)
     {
@@ -382,7 +437,8 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
     
         copy_from_physmem(buffer, page->entry->ppage);
 
-        //Handle if there will be 1 more owner after the copy on write is compelete/ we must give him write access if he was dirty
+        //Handle if there will be 1 more owner after the copy on write is compelete/
+        // we must give him write access if he was dirty
         if(ppage_to_owners[page->entry->ppage].size() == 2)
         {
             for(auto vp : ppage_to_owners[page->entry->ppage])
@@ -437,7 +493,10 @@ void handle_fault_clock(bool write_flag, Virtual_Page* page)
             assert(assoc_page->entry->write_enable == 0 and 
             (assoc_page->entry->read_enable == 0 or assoc_page->entry->read_enable==1));
             assoc_page->entry->read_enable = 1;
-            assoc_page->entry->write_enable = d_bit;          
+            if (associated_pages.size() == 1 or assoc_page->filename != DEFAULT_FILENAME)
+            {
+                assoc_page->entry->write_enable = d_bit;          
+            }
         }
     }
 }
@@ -461,7 +520,15 @@ void handle_fault_swap(bool write_flag, Virtual_Page* page)
     
     // adds to clock
     Physical_Page* new_phys_page = create_phys_page(write_flag);
-    Physical_Page old_ppage(*new_phys_page);
+    //// danger zone //////
+    assert(ppage_to_owners.find(new_phys_page->ppage_location) == end(ppage_to_owners));
+    ppage_to_owners[new_phys_page->ppage_location] = std::unordered_set<Virtual_Page*>();
+    ppage_to_owners[new_phys_page->ppage_location].insert(page);
+    page->entry->ppage = new_phys_page->ppage_location;
+    page->entry->read_enable = 1;
+    page->entry->write_enable = write_flag;
+
+    /// danger zone ^^^^ all of this should get overwritten
     file_read(nullptr, page->block, (void *) (uintptr_t(vm_physmem) + (VM_PAGESIZE * new_phys_page->ppage_location)));
     //EXTEREMELYYYY WRONG
     // file_read(nullptr, page->block, (void *) (uintptr_t(vm_physmem) + (VM_PAGESIZE * page->entry->ppage)));
@@ -498,6 +565,7 @@ void handle_fault_swap(bool write_flag, Virtual_Page* page)
         page->entry->ppage = copy_on_write_ppage->ppage_location;
         page->entry->read_enable = 1;
         page->entry->write_enable = 1;
+        //Set write flag to false so we update old owners correctly
     }
 
     for (auto virtual_page : owners)
@@ -510,14 +578,13 @@ void handle_fault_swap(bool write_flag, Virtual_Page* page)
         virtual_page->in_clock = true;
         virtual_page->entry->ppage = new_phys_page->ppage_location; 
         virtual_page->entry->read_enable = 1;
-        virtual_page->entry->write_enable = write_flag;
+        virtual_page->entry->write_enable = new_phys_page->dirty;
     }
-    assert(ppage_to_owners.find(new_phys_page->ppage_location) == end(ppage_to_owners));
+
+    //assert(ppage_to_owners.find(new_phys_page->ppage_location) == end(ppage_to_owners));
     ppage_to_owners[new_phys_page->ppage_location] = owners;
     
     // propigate moving the swap file from swap to phys
-
-
 }
 
 
@@ -619,6 +686,19 @@ std::string read_ppage_for_filename(const void * start_addr, const void * end_ad
 
 
 /////////////////// ASSERT FUNCTIONS //////////////////
+
+bool assert_clock_sync(){
+    for(auto ppage : mem_clock)
+    {
+        
+        if(ppage_to_owners.find(ppage->ppage_location) == end(ppage_to_owners) and
+        ppage_to_ghostpage.find(ppage->ppage_location) == end(ppage_to_ghostpage)){
+            return false;
+        }
+    }
+    return true;
+}
+
 bool assert_clock_and_pages_sync()
 {
     // count the number of pages in the arena that say they are in clock
@@ -691,6 +771,8 @@ bool assert_ppage_owners_sync()
                 }
             }
         }
+        // the zero page does not need to have any owners, and if this phys page is a 
+        // ghost page it does not need to have owners 
         else if (owner_set.first != 0)
         {
             return false;
@@ -739,9 +821,12 @@ bool assert_no_write_on_share(){
     }
     for(const auto& ppage_owner_pair : ppage_to_owners){
         //If its shared
-        if(ppage_owner_pair.second.size() > 1){
-            for(const auto vp : ppage_owner_pair.second){
-                if(vp->entry->write_enable == 1 and vp->filename == DEFAULT_FILENAME){
+        if(ppage_owner_pair.second.size() > 1)
+        {
+            for(const auto vp : ppage_owner_pair.second)
+            {
+                if(vp->entry->write_enable == 1 and vp->filename == DEFAULT_FILENAME)
+                {
                     return false;
                 }
             }
@@ -753,13 +838,20 @@ bool assert_no_write_on_share(){
 bool assert_same_ppage_same_block()
 {
     
-    // vp1 :in_mem=true ppage = 3 in_swap = true -> block = 10
-    // vp2 :in_mem=true ppage = 3 in_swap = true -> block = 10
+    /*
+    
+        verifies that virutal page that says they are the owner of a physical page
+        actuall has that physical page as a ppage number
+    */
 
-    //ppage_to_owners[3] = {vp1, vp2}
 
-
-    for(const auto ppage : mem_clock){
+    for(const auto ppage : mem_clock)
+    {
+        if (ppage_to_ghostpage.find(ppage->ppage_location) != end(ppage_to_ghostpage))
+        {
+            continue;
+        }
+        
         if(ppage_to_owners[ppage->ppage_location].size() < 1) return false;
 
         const unsigned int first_block = 
@@ -1137,8 +1229,9 @@ void assert_all()
     if (DEBUG)
     return;
 
-
     assert(assert_clock_and_pages_sync());
+
+    assert(assert_clock_sync());
 
     assert(assert_swap_and_pages_sync());
 
@@ -1179,5 +1272,7 @@ void assert_all()
     assert(assert_fileback_not_in_swap());
 
     assert(assert_fileback_owner_sync());
+
+    assert(assert_clock_sync());
 }
 #endif /* _VM_PAGER_H_ */

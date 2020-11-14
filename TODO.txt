@@ -61,3 +61,10 @@ question:
 THINGS WE CONFIRMED
 test case test_write_on_evicted_old
 test_chain_fork_shared_write.4.cpp
+
+
+
+
+
+QUESTIONS FOR TODAY:
+What does the clock algorithm do if a physical memory location has no backing virtual pages

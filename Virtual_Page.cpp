@@ -16,7 +16,8 @@ void check_virtual_page_bound(Arena* arena, std::string& filename)
 
     if (filename == DEFAULT_FILENAME)
     {
-        if(available_swap_blocks > 0){
+        if(available_swap_blocks > 0)
+        {
             //Iterate swap space
             --available_swap_blocks;
         }
@@ -71,12 +72,45 @@ Virtual_Page::Virtual_Page(const char *filename_, unsigned int file_block_) : fi
 
     entry = &current_arena->page_table.ptes[vp_num];
     
-    //Set ppage to 0 so it doesnt default to 0.
-    entry->ppage = 1;
-    entry->read_enable = 0;
-    entry->write_enable = 0;
-    this->in_swap = false;
-    this->in_clock = false;
+    //TODOfile
+    //If there already is a physical page that has your filename and block
+    //Just set yourself to point to it
+    //And update your enables appropriatly
+    if(filename_to_ppage.find(filename) != end(filename_to_ppage) and filename_to_ppage[filename].find(block) != end(filename_to_ppage[filename]))
+    {
+        Physical_Page existing_ppage = filename_to_ppage[filename][block];
+        
+        entry->ppage = existing_ppage.ppage_location;
+        entry->read_enable = 1;
+        entry->write_enable = existing_ppage.dirty;
+        this->in_swap = false;
+        this->in_clock = true;
+        
+        // this phyiscal page is no longer a ghost so it needs to be removed from the structures 
+        filename_to_ppage[this->filename].erase(this->block);
+        if(filename_to_ppage.size() == 0)
+        {
+            filename_to_ppage.erase(this->filename);
+        }
+        ppage_to_ghostpage.erase(existing_ppage.ppage_location);
+        
+        assert(ppage_to_owners.find(this->entry->ppage) == end(ppage_to_owners));
+        ppage_to_owners[this->entry->ppage] = std::unordered_set<Virtual_Page*>();
+        ppage_to_owners[this->entry->ppage].insert(this);
+         
+    }
+    else
+    {
+        //Set ppage to 0 so it doesnt default to 0.
+        entry->ppage = 1;
+        entry->read_enable = 0;
+        entry->write_enable = 0;
+        this->in_swap = false;
+        this->in_clock = false;
+    }
+
+
+
     //no overwrites
     assert(current_arena->virtual_pages.find(vp_num) == end(current_arena->virtual_pages));
 
@@ -97,6 +131,10 @@ Virtual_Page::Virtual_Page(const char *filename_, unsigned int file_block_) : fi
                 entry->read_enable = vp->entry->read_enable;
                 in_clock = vp->in_clock;
                 assert(!vp->in_swap);
+                if(in_clock)
+                {
+                    ppage_to_owners[vp->entry->ppage].insert(this);
+                }
                 break;
             }
         }
@@ -186,9 +224,27 @@ Virtual_Page::~Virtual_Page()
             filename_to_owners.erase(this->filename);
             
             //If you own physical memory and you are dirty you must write it back
-            if(this->in_clock and ppage_in_clock[this->entry->ppage]->dirty == true)
+            if(this->in_clock)
             {
-                file_write(this->filename.data(), this->block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * this->entry->ppage)));
+                //TODOfile
+                //Keep this physical page in memory 
+                //Add it to a file->block->phys_mem
+                //Its okay to kill virtual page
+                if (filename_to_ppage.find(this->filename) != end(filename_to_ppage))
+                {
+                    assert(filename_to_ppage[this->filename].find(this->block) == end(filename_to_ppage[this->filename]));
+                }
+                filename_to_ppage[this->filename][this->block];
+                filename_to_ppage[this->filename][this->block].ppage_location =this->entry->ppage;
+                assert(ppage_in_clock.find(this->entry->ppage) != end(ppage_in_clock));
+                filename_to_ppage[this->filename][this->block].dirty = ppage_in_clock[this->entry->ppage]->dirty;
+                
+            
+                //ASSERT THIS PPAGE is not being used to store any other filename or block
+                assert(ppage_to_ghostpage.find(ppage_in_clock[this->entry->ppage]->ppage_location) == end(ppage_to_ghostpage));
+                ppage_to_ghostpage[ppage_in_clock[this->entry->ppage]->ppage_location] = Ghost_Page(this->filename, this->block, this->entry->read_enable == 1);
+
+                //file_write(this->filename.data(), this->block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * this->entry->ppage)));
             }
         }
     }
@@ -232,7 +288,7 @@ Virtual_Page::~Virtual_Page()
             //Dont evict a page just replace this one on next vm_fault
             //Only run if you are the last person pointing to this physical page
             if(ppage_to_owners[this->entry->ppage].size() == 1 
-            and this->entry->ppage != 0)
+            and this->entry->ppage != 0 and this->filename == DEFAULT_FILENAME)
             {
                 for(auto pp = mem_clock.begin(); pp != mem_clock.end(); ++pp){
                     if((*pp)->ppage_location == this->entry->ppage){

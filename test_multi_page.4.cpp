@@ -14,8 +14,8 @@ int main()
     
     char* a = (char *) vm_map(nullptr, 0);
     char* b = (char *) vm_map(nullptr, 0);
-    char* c = (char *) vm_map(nullptr, 0);
     std::string big(4097, 'z');
     strcpy(a,big.data());
-    strcpy(c,big.data());
+    strcpy(b,"SOME RANDOM TEXT THAT ENDS");
+    cout << a;
 }

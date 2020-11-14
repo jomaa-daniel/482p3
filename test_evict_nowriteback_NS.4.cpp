@@ -12,7 +12,8 @@ int main()
 {
 
     /*
-        This will test a clean page that has a swap block and does not need to write back to it
+        This will test a clean page that has a swap
+        block and does not need to write back to it
         upon eviction
     */
    

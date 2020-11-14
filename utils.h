@@ -94,6 +94,8 @@ void assert_all();
 // make sure this accounts for the zero page
 bool assert_clock_and_pages_sync();
 
+bool assert_clock_sync();
+
 bool assert_swap_and_pages_sync();
 
 bool assert_ppage_owners_sync();

@@ -19,7 +19,7 @@ test_cases = ["test_copy_on_write_last_owner", "test_copy_on_write_shared_swap",
   "test_fork_chain_no_work",  "test_reclaim_ppage", "test_reuse_ppage_NS", "test_evict_writeback_S",
  "test_simple", "test_simplified_fork", "test_chain_fork_shared_write", "test_copy_on_write_evict", 
  "test_chain_forks_last_owners", "test_evict_clean_write", "test_multi_page_filename", "test_write_read_on_old", "test_fileback_1","test_fileback_2",
- "test_fileback_3","test_fileback_4","test_fileback_5","test_fileback_6"]
+ "test_fileback_3","test_fileback_4","test_fileback_5","test_fileback_6","test_fileback_7","test_fileback_8"]
  
  #"test_max_swap_blocks_NS "test_fault_on_swap", NOT TESTED DUE TO SIZE
 

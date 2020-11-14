@@ -11,6 +11,7 @@
 #include "Virtual_Page.h"
 #include "Arena.h"
 #include <string>
+#include <utility>
 
 using namespace std;
 
@@ -46,6 +47,17 @@ struct Physical_Page
     }
 };
 
+struct Ghost_Page
+{
+    std::string filename;
+    unsigned int block;
+    unsigned int referenced;
+    Ghost_Page() : block(0), referenced(0) {}
+    Ghost_Page(string& in_file, unsigned int block_, unsigned int referenced_)
+     : filename(in_file), block(block_), referenced(referenced_) {}
+    
+};
+
 // NOTE ONLY WRITEBACK WHEN NEVER IN SWAP I.E. virtual_to_swap returns null OR dirty
 extern std::deque<Physical_Page*> mem_clock;
 //Not required for correctness
@@ -58,6 +70,9 @@ extern std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> swa
 extern std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> ppage_to_owners;
 extern std::unordered_map<std::string, std::unordered_set<Virtual_Page*>> filename_to_owners;
 
+extern std::unordered_map<std::string, unordered_map<unsigned int, Physical_Page>> filename_to_ppage;
+extern std::unordered_map<unsigned int, Ghost_Page> ppage_to_ghostpage;
+
 extern unsigned int available_swap_blocks;
 extern unsigned int current_available_block;
 extern unsigned int MAX_SWAP_CAPACITY;
@@ -66,9 +81,3 @@ extern unsigned int MAX_PHYSICAL_MEM_SIZE;
 
 
 #endif /* _VM_PAGER_H_ */
-
-
-
-
-
-
