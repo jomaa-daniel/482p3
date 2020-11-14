@@ -1,3 +1,5 @@
+#define NDEBUG
+
 #include "vm_pager.h"
 #include "globals.h"
 #include "utils.h"

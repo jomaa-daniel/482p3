@@ -1,3 +1,5 @@
+#define NDEBUG
+
 #include "vm_arena.h"
 #include "Arena.h"
 #include "utils.h"
@@ -20,21 +22,25 @@ Arena::Arena(Arena& other)
         page_table_entry_t & c = page_table.ptes[i];
         c.read_enable = p.read_enable;
         
-        //Child must always copy on write so it must be write disabled
-        c.write_enable = 0;
-        //Parent must always copy on write so it must be write disabled
-        p.write_enable = 0;
-        
         c.ppage = p.ppage;
 
         if (other.virtual_pages.find(i) != end(other.virtual_pages))
         {
+            
             Virtual_Page * valid_page = other.virtual_pages[i];
             // check if filebacked, copy over old entry
             if (valid_page->filename != DEFAULT_FILENAME)
             { 
                 c.write_enable = p.write_enable;
             }
+            else
+            {
+                //Child must always copy on write so it must be write disabled
+                c.write_enable = 0;
+                //Parent must always copy on write so it must be write disabled
+                p.write_enable = 0;
+            }
+            
 
             
             // Allocate a new page and increments the address bound in its arena
@@ -48,6 +54,13 @@ Arena::Arena(Arena& other)
                 i,
                 this
             );
+        }
+        else
+        {
+             //Child must always copy on write so it must be write disabled
+            c.write_enable = 0;
+            //Parent must always copy on write so it must be write disabled
+            p.write_enable = 0;
         }
     }
     

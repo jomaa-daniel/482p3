@@ -1,3 +1,5 @@
+#define NDEBUG
+
 #ifndef _utils_H_
 #define _utils_H_
 #include "utils.h"
@@ -260,7 +262,10 @@ void evict_phys_page(Physical_Page& ppage)
         assert(filename_to_ppage[filename][block].ppage_location == ppage.ppage_location);
 
         //Write back
-        file_write(filename.c_str(), block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * ppage.ppage_location)));
+        if(filename_to_ppage[filename][block].dirty)
+        {
+            file_write(filename.c_str(), block, (void *) ( uintptr_t(vm_physmem) + (VM_PAGESIZE * ppage.ppage_location)));
+        }
         
         filename_to_ppage[filename].erase(block);
 
@@ -692,7 +697,8 @@ bool assert_clock_sync(){
     {
         
         if(ppage_to_owners.find(ppage->ppage_location) == end(ppage_to_owners) and
-        ppage_to_ghostpage.find(ppage->ppage_location) == end(ppage_to_ghostpage)){
+        ppage_to_ghostpage.find(ppage->ppage_location) == end(ppage_to_ghostpage))
+        {
             return false;
         }
     }
