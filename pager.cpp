@@ -310,11 +310,17 @@ void vm_destroy()
 /*
     in order to force the pager to fault every time 
     there is a write so that i can log the virutal page
-    address i need to change the write flag to == 0 
-    s.t. the pager will always fault on a write
+    address i need to change the write flag to == 0
+    however, this will cause an infnite loop. Therefore, 
+    since this is a set i only need to log when a virtual page
+    is acccessed just ONCE. This means that every time that 
+    vm_acccessed is called, i need to set the write flag
+    for those virtual pages to 0 so that they will fault on 
+    write again
 
 
     changed code: pager.cpp line 224
+    changed code: pager.cpp line 255
 
 */
 std::set<uintptr_t> vm_accessed()

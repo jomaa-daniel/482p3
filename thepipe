@@ -1,0 +1,65 @@
+Pager started with 4 physical memory pages
+vm_create	(12690, 13078)
+vm_create returned 0
+vm_switch	(13078)
+					returning to (13078) with pages:
+vm_map		(13078)	0x0	0
+vm_map returned 0x600000000
+					returning to (13078) with pages:
+					r	vpage 0x600000	ppage 0x0
+vm_map		(13078)	0x0	0
+vm_map returned 0x600001000
+					returning to (13078) with pages:
+					r	vpage 0x600000	ppage 0x0
+					r	vpage 0x600001	ppage 0x0
+vm_map		(13078)	0x0	0
+vm_map returned 0x600002000
+					returning to (13078) with pages:
+					r	vpage 0x600000	ppage 0x0
+					r	vpage 0x600001	ppage 0x0
+					r	vpage 0x600002	ppage 0x0
+vm_map		(13078)	0x0	0
+vm_map returned 0x600003000
+					returning to (13078) with pages:
+					r	vpage 0x600000	ppage 0x0
+					r	vpage 0x600001	ppage 0x0
+					r	vpage 0x600002	ppage 0x0
+					r	vpage 0x600003	ppage 0x0
+vm_fault	(13078)	0x600002000	write
+vm_fault returned 0
+					returning to (13078) with pages:
+					r	vpage 0x600000	ppage 0x0
+					r	vpage 0x600001	ppage 0x0
+					rw	vpage 0x600002	ppage 0x1
+					r	vpage 0x600003	ppage 0x0
+vm_fault	(13078)	0x600003000	write
+vm_fault returned 0
+					returning to (13078) with pages:
+					r	vpage 0x600000	ppage 0x0
+					r	vpage 0x600001	ppage 0x0
+					rw	vpage 0x600002	ppage 0x1
+					rw	vpage 0x600003	ppage 0x2
+vm_accessed	(13078)
+vm_accessed returned 0x2 0x3
+					returning to (13078) with pages:
+					r	vpage 0x600000	ppage 0x0
+					r	vpage 0x600001	ppage 0x0
+					r	vpage 0x600002	ppage 0x1
+					r	vpage 0x600003	ppage 0x2
+vm_fault	(13078)	0x600000000	write
+vm_fault returned 0
+					returning to (13078) with pages:
+					rw	vpage 0x600000	ppage 0x3
+					r	vpage 0x600001	ppage 0x0
+					r	vpage 0x600002	ppage 0x1
+					r	vpage 0x600003	ppage 0x2
+vm_fault	(13078)	0x600001000	write
+file_write	<swap>	0
+vm_fault returned 0
+					returning to (13078) with pages:
+					rw	vpage 0x600001	ppage 0x1
+vm_accessed	(13078)
+vm_accessed returned 0 0x1
+					returning to (13078) with pages:
+					r	vpage 0x600001	ppage 0x1
+vm_destroy	(13078)
