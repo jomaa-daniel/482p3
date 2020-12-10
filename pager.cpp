@@ -330,7 +330,7 @@ std::set<uintptr_t> vm_accessed()
     for (auto page_base_addr : accessed)
     {
         current_arena->virtual_pages[page_base_addr]->entry->write_enable = 0;
-        tmp.insert(page_base_addr);
+        tmp.insert((page_base_addr * VM_PAGESIZE) + (uintptr_t)VM_ARENA_BASEADDR); // THE ONLY ISSUE IS HERE WHERE the page number is too large
         accessed.erase(page_base_addr);
     }
     return tmp;
