@@ -252,6 +252,12 @@ Virtual_Page::~Virtual_Page()
             //     assert(ppage.ppage_location == this->entry->ppage);
             // }
 
+            /*
+                reads to clean data will aways be written back when evicted 
+                no type of file sharing between processes
+                
+            */
+
             filename_to_ppage[this->filename][this->block];
             filename_to_ppage[this->filename][this->block].ppage_location =this->entry->ppage;
             assert(ppage_in_clock.find(this->entry->ppage) != end(ppage_in_clock));

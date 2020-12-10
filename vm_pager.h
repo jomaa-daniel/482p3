@@ -8,6 +8,8 @@
 #define _VM_PAGER_H_
 
 #include <sys/types.h>
+#include <cstdint>
+#include <set>
 #include "vm_arena.h"
 
 /*
@@ -86,6 +88,14 @@ extern void vm_destroy();
  * filename is specified relative to the pager's current working directory.
  */
 extern void *vm_map(const char *filename, unsigned int block);
+
+/*
+ * vm_accessed
+ *
+ * Return the set of virtual page numbers that were written to since the
+ * last call to vm_accessed.
+ */
+extern std::set<uintptr_t> vm_accessed();
 
 /*
  * *****************************************************************

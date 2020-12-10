@@ -1,5 +1,6 @@
 #ifndef _globals_H_
 #define _globals_H_
+#define NDEBUG
 #include <deque>
 #include <unordered_map>
 #include <unordered_set>
@@ -69,7 +70,7 @@ extern std::unordered_map<pid_t, Arena*> pid_to_arena;
 extern std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> swap_block_to_owners;
 extern std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> ppage_to_owners;
 extern std::unordered_map<std::string, std::unordered_set<Virtual_Page*>> filename_to_owners;
-
+extern std::set<uintptr_t> accessed;
 extern std::unordered_map<std::string, unordered_map<unsigned int, Physical_Page>> filename_to_ppage;
 extern std::unordered_map<unsigned int, Ghost_Page> ppage_to_ghostpage;
 

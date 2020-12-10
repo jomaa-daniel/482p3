@@ -17,7 +17,7 @@ std::unordered_map<unsigned int , std::unordered_set<Virtual_Page *>> ppage_to_o
 std::unordered_map<std::string, std::unordered_set<Virtual_Page*>> filename_to_owners;
 std::unordered_map<std::string, unordered_map<unsigned int, Physical_Page>> filename_to_ppage;
 std::unordered_map<unsigned int, Ghost_Page> ppage_to_ghostpage;
-
+std::set<uintptr_t> accessed;
 unsigned int available_swap_blocks;
 unsigned int MAX_SWAP_CAPACITY;
 unsigned int MAX_PHYSICAL_MEM_SIZE;
@@ -220,6 +220,8 @@ int vm_fault(const void* addr, bool write_flag)
     
     // find the virutal page
     unsigned int base_address = get_virtual_page_num(addr);
+    // CODE CHANGES FOR THE FINAL
+    accessed.insert(base_address);
 
     Virtual_Page* current_page =
      current_arena->virtual_pages[base_address];
@@ -249,9 +251,15 @@ int vm_fault(const void* addr, bool write_flag)
         else
         {
             handle_fault_zero(write_flag, current_page);
-        }        
+        }
+        // ===========================
+        if (write_flag)
+        {
+            accessed.insert(base_address);
+        }
+        // ===========================
 
-        assert_all();
+        // assert_all();
         return 0;
 
     }
@@ -296,4 +304,28 @@ void vm_destroy()
     // i.e. if the last owner is dirty, set W = 1 because 
     // he is now able to write with impunity 
     assert_all();
+}
+
+
+/*
+    in order to force the pager to fault every time 
+    there is a write so that i can log the virutal page
+    address i need to change the write flag to == 0 
+    s.t. the pager will always fault on a write
+
+
+    changed code: pager.cpp line 224
+
+*/
+std::set<uintptr_t> vm_accessed()
+{
+    std::set<uintptr_t> tmp;
+
+    for (auto page_base_addr : accessed)
+    {
+        current_arena->virtual_pages[page_base_addr]->entry->write_enable = 0;
+        tmp.insert(page_base_addr);
+        accessed.erase(page_base_addr);
+    }
+    return tmp;
 }

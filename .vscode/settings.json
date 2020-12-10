@@ -46,6 +46,7 @@
         "cstring": "cpp",
         "unordered_set": "cpp",
         "iostream": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "set": "cpp"
     }
 }

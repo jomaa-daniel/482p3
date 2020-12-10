@@ -6,15 +6,15 @@ PAGER_SOURCES=pager.cpp Arena.cpp Virtual_Page.cpp utils.cpp
 # Generate the names of the pager's object files
 PAGER_OBJS=${PAGER_SOURCES:.cpp=.o}
 
-all: pager test_all_states_fileback
+all: pager test
 
 # Compile the pager and tag this compilation
-pager: ${PAGER_OBJS} libvm_pager_core.o
+pager: ${PAGER_OBJS} libvm_pager.o
 	./autotag.sh
 	${CC} -o $@ $^
 
 # Compile an application program
-test_all_states_fileback: test_all_states_fileback.4.cpp libvm_app_core.o
+test: test1.4.cpp libvm_app.o
 	${CC} -o $@ $^ -ldl
 
 # Generic rules for compiling a source file to an object file
@@ -24,5 +24,5 @@ test_all_states_fileback: test_all_states_fileback.4.cpp libvm_app_core.o
 	${CC} -c $<
 
 clean:
-	rm -f ${PAGER_OBJS} pager 
+	rm -f ${PAGER_OBJS} pager test
 
